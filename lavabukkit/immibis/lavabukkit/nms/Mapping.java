@@ -159,6 +159,16 @@ public class Mapping {
 		}
 		return rv.toString();
 	}
+
+	public String mapTypeDescriptor(String desc) {
+		if(desc.startsWith("["))
+			return "[" + mapTypeDescriptor(desc.substring(1));
+		if(desc.startsWith("L") && desc.endsWith(";"))
+			return "L" + mapClass(desc.substring(1, desc.length() - 1)) + ";";
+		if(desc.length() == 1 && "BSIJFDCZV".contains(desc))
+			return desc;
+		return mapClass(desc);
+	}
 	
 	
 }

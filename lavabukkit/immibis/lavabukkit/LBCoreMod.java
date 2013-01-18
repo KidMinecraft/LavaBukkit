@@ -25,7 +25,8 @@ public class LBCoreMod implements IFMLLoadingPlugin {
 			"immibis.lavabukkit.asm.RedstoneEventTransformer",
 			"immibis.lavabukkit.asm.LBAccessTransformer",
 			"immibis.lavabukkit.asm.IInventoryTransformer",
-			"immibis.lavabukkit.asm.TrigMathTransformer"
+			"immibis.lavabukkit.asm.TrigMathTransformer",
+			"immibis.lavabukkit.asm.DeobfuscateModTransformer"
 		};
 	}
 
