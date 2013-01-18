@@ -1,0 +1,11 @@
+/*
+!/bukkit
+!/craftbukkit
+!/eclipse
+!/lavabukkit
+!/mcp
+!/setup
+!/.gitignore
+!/.gitmodules
+/mcp/**
+!/mcp/src

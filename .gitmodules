@@ -1,0 +1,3 @@
+[submodule "bukkit"]
+	path = bukkit
+	url = git://github.com/Bukkit/Bukkit.git
