@@ -2,11 +2,12 @@ package org.bukkit.craftbukkit.inventory;
 
 import java.util.Map;
 
-import net.minecraft.server.CraftingManager;
-import net.minecraft.server.ShapedRecipes;
+import net.minecraft.item.crafting.ShapedRecipes;
 
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapedRecipe;
+
+import cpw.mods.fml.common.registry.GameRegistry;
 
 public class CraftShapedRecipe extends ShapedRecipe implements CraftRecipe {
     // TODO: Could eventually use this to add a matches() method or some such
@@ -56,9 +57,9 @@ public class CraftShapedRecipe extends ShapedRecipe implements CraftRecipe {
             i++;
             int id = mdata.getTypeId();
             short dmg = mdata.getDurability();
-            data[i] = new net.minecraft.server.ItemStack(id, 1, dmg);
+            data[i] = new net.minecraft.item.ItemStack(id, 1, dmg);
             i++;
         }
-        CraftingManager.getInstance().registerShapedRecipe(CraftItemStack.asNMSCopy(this.getResult()), data);
+        GameRegistry.addRecipe(CraftItemStack.asNMSCopy(this.getResult()), data);
     }
 }

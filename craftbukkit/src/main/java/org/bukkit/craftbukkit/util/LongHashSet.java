@@ -16,9 +16,11 @@
 
 package org.bukkit.craftbukkit.util;
 
-import java.util.Iterator;
 import java.util.ConcurrentModificationException;
+import java.util.Iterator;
 import java.util.NoSuchElementException;
+
+import net.minecraft.world.ChunkCoordIntPair;
 
 public class LongHashSet {
     private final static int INITIAL_SIZE = 3;
@@ -78,7 +80,7 @@ public class LongHashSet {
     }
 
     public boolean add(int msw, int lsw) {
-        return add(LongHash.toLong(msw, lsw));
+        return add(ChunkCoordIntPair.chunkXZ2Int(msw, lsw));
     }
 
     public boolean add(long value) {
@@ -125,7 +127,7 @@ public class LongHashSet {
     }
 
     public void remove(int msw, int lsw) {
-        remove(LongHash.toLong(msw, lsw));
+        remove(ChunkCoordIntPair.chunkXZ2Int(msw, lsw));
     }
 
     public boolean remove(long value) {
@@ -298,4 +300,13 @@ public class LongHashSet {
             }
         }
     }
+
+    // LavaBukkit start
+	public void retainAll(LongHashSet set) {
+		Iterator e = iterator();
+		while(e.hasNext())
+			if(!set.contains((Long)e.next()))
+				e.remove();
+	}
+	// LavaBukkit end
 }

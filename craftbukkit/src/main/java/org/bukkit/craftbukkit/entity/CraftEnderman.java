@@ -1,6 +1,6 @@
 package org.bukkit.craftbukkit.entity;
 
-import net.minecraft.server.EntityEnderman;
+import net.minecraft.entity.monster.EntityEnderman;
 
 import org.bukkit.Material;
 import org.bukkit.craftbukkit.CraftServer;
@@ -14,12 +14,12 @@ public class CraftEnderman extends CraftMonster implements Enderman {
     }
 
     public MaterialData getCarriedMaterial() {
-        return Material.getMaterial(getHandle().getCarriedId()).getNewData((byte) getHandle().getCarriedData());
+        return Material.getMaterial(getHandle().getCarried()).getNewData((byte) getHandle().getCarryingData());
     }
 
     public void setCarriedMaterial(MaterialData data) {
-        getHandle().setCarriedId(data.getItemTypeId());
-        getHandle().setCarriedData(data.getData());
+        getHandle().setCarried(data.getItemTypeId());
+        getHandle().setCarryingData(data.getData());
     }
 
     @Override

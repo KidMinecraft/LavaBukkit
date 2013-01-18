@@ -37,4 +37,9 @@ public class BlockStateListPopulator {
     public World getWorld() {
         return world;
     }
+    
+    // LavaBukkit start
+    public void setBlock(int x, int y, int z, int type) {setTypeId(x, y, z, type);}
+    public void setBlockWithNotify(int x, int y, int z, int type) {setTypeId(x, y, z, type);}
+    // LavaBukkit end
 }

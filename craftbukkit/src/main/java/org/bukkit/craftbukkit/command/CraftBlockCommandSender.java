@@ -1,6 +1,7 @@
 package org.bukkit.craftbukkit.command;
 
-import net.minecraft.server.TileEntityCommand;
+import net.minecraft.tileentity.TileEntityCommandBlock;
+
 import org.bukkit.block.Block;
 import org.bukkit.command.BlockCommandSender;
 
@@ -8,15 +9,15 @@ import org.bukkit.command.BlockCommandSender;
  * Represents input from a command block
  */
 public class CraftBlockCommandSender extends ServerCommandSender implements BlockCommandSender {
-    private final TileEntityCommand commandBlock;
+    private final TileEntityCommandBlock commandBlock;
 
-    public CraftBlockCommandSender(TileEntityCommand commandBlock) {
+    public CraftBlockCommandSender(TileEntityCommandBlock commandBlock) {
         super();
         this.commandBlock = commandBlock;
     }
 
     public Block getBlock() {
-        return commandBlock.world.getWorld().getBlockAt(commandBlock.x, commandBlock.y, commandBlock.z);
+        return commandBlock.worldObj.getWorld().getBlockAt(commandBlock.xCoord, commandBlock.yCoord, commandBlock.zCoord);
     }
 
     public void sendMessage(String message) {

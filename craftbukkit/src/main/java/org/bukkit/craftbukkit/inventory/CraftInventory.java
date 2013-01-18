@@ -1,34 +1,40 @@
 package org.bukkit.craftbukkit.inventory;
 
+import immibis.lavabukkit.BukkitInventoryHelper;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 
-import net.minecraft.server.ContainerAnvilInventory;
-import net.minecraft.server.ContainerEnchantTableInventory;
-import net.minecraft.server.IInventory;
-import net.minecraft.server.InventoryCrafting;
-import net.minecraft.server.InventoryEnderChest;
-import net.minecraft.server.InventoryMerchant;
-import net.minecraft.server.PlayerInventory;
-import net.minecraft.server.TileEntityBeacon;
-import net.minecraft.server.TileEntityBrewingStand;
-import net.minecraft.server.TileEntityDispenser;
-import net.minecraft.server.TileEntityFurnace;
+import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.inventory.IInventory;
+import net.minecraft.inventory.InventoryCrafting;
+import net.minecraft.inventory.InventoryEnderChest;
+import net.minecraft.inventory.InventoryMerchant;
+import net.minecraft.inventory.InventoryRepair;
+import net.minecraft.inventory.SlotEnchantmentTable;
+import net.minecraft.tileentity.TileEntityBeacon;
+import net.minecraft.tileentity.TileEntityBrewingStand;
+import net.minecraft.tileentity.TileEntityDispenser;
+import net.minecraft.tileentity.TileEntityFurnace;
 
 import org.apache.commons.lang.Validate;
+import org.bukkit.Material;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.Material;
 
 public class CraftInventory implements Inventory {
     protected IInventory inventory;
+    protected InventoryHolder holder; // LavaBukkit
 
-    public CraftInventory(IInventory inventory) {
+    // LavaBukkit - changed signature
+    public CraftInventory(IInventory inventory, InventoryHolder holder) {
         this.inventory = inventory;
+        this.holder = holder; // LavaBukkit
+        Validate.notNull(inventory);
     }
 
     public IInventory getInventory() {
@@ -36,47 +42,49 @@ public class CraftInventory implements Inventory {
     }
 
     public int getSize() {
-        return getInventory().getSize();
+        return getInventory().getSizeInventory();
     }
 
     public String getName() {
-        return getInventory().getName();
+        return getInventory().getInvName();
     }
 
     public ItemStack getItem(int index) {
-        net.minecraft.server.ItemStack item = getInventory().getItem(index);
+        net.minecraft.item.ItemStack item = getInventory().getStackInSlot(index);
         return item == null ? null : CraftItemStack.asCraftMirror(item);
     }
 
     public ItemStack[] getContents() {
         ItemStack[] items = new ItemStack[getSize()];
-        net.minecraft.server.ItemStack[] mcItems = getInventory().getContents();
-
-        for (int i = 0; i < mcItems.length; i++) {
-            items[i] = mcItems[i] == null ? null : CraftItemStack.asCraftMirror(mcItems[i]);
+        
+        // LavaBukkit start
+        for(int i = 0; i < items.length; i++) {
+        	net.minecraft.item.ItemStack s = inventory.getStackInSlot(i);
+        	items[i] = s == null ? null : CraftItemStack.asCraftMirror(s);
         }
+        // LavaBukkit end
 
         return items;
     }
 
     public void setContents(ItemStack[] items) {
-        if (getInventory().getContents().length < items.length) {
-            throw new IllegalArgumentException("Invalid inventory size; expected " + getInventory().getContents().length + " or less");
-        }
+    	// LavaBukkit start
+    	int size = inventory.getSizeInventory();
+        if (size < items.length)
+            throw new IllegalArgumentException("Invalid inventory size; expected " + size + " or less"); // LavaBukkit
 
-        net.minecraft.server.ItemStack[] mcItems = getInventory().getContents();
-
-        for (int i = 0; i < mcItems.length; i++) {
+        for (int i = 0; i < size; i++) {
             if (i >= items.length) {
-                mcItems[i] = null;
+                inventory.setInventorySlotContents(i, null);
             } else {
-                mcItems[i] = CraftItemStack.asNMSCopy(items[i]);
+                inventory.setInventorySlotContents(i, CraftItemStack.asNMSCopy(items[i]));
             }
         }
+        // LavaBukkit end
     }
 
     public void setItem(int index, ItemStack item) {
-        getInventory().setItem(index, ((item == null || item.getTypeId() == 0) ? null : CraftItemStack.asNMSCopy(item)));
+        getInventory().setInventorySlotContents(index, ((item == null || item.getTypeId() == 0) ? null : CraftItemStack.asNMSCopy(item)));
     }
 
     public boolean contains(int materialId) {
@@ -366,7 +374,7 @@ public class CraftInventory implements Inventory {
     }
 
     private int getMaxItemStack() {
-        return getInventory().getMaxStackSize();
+        return getInventory().getInventoryStackLimit();
     }
 
     public void remove(int materialId) {
@@ -414,23 +422,23 @@ public class CraftInventory implements Inventory {
     }
 
     public List<HumanEntity> getViewers() {
-        return this.inventory.getViewers();
+        return BukkitInventoryHelper.getViewers(inventory); // LavaBukkit
     }
 
     public String getTitle() {
-        return inventory.getName();
+        return inventory.getInvName();
     }
 
     public InventoryType getType() {
         if (inventory instanceof InventoryCrafting) {
-            return inventory.getSize() >= 9 ? InventoryType.WORKBENCH : InventoryType.CRAFTING;
-        } else if (inventory instanceof PlayerInventory) {
+            return inventory.getSizeInventory() >= 9 ? InventoryType.WORKBENCH : InventoryType.CRAFTING;
+        } else if (inventory instanceof InventoryPlayer) {
             return InventoryType.PLAYER;
         } else if (inventory instanceof TileEntityDispenser) {
             return InventoryType.DISPENSER;
         } else if (inventory instanceof TileEntityFurnace) {
             return InventoryType.FURNACE;
-        } else if (inventory instanceof ContainerEnchantTableInventory) {
+        } else if (inventory instanceof SlotEnchantmentTable) {
             return InventoryType.ENCHANTING;
         } else if (inventory instanceof TileEntityBrewingStand) {
             return InventoryType.BREWING;
@@ -442,7 +450,7 @@ public class CraftInventory implements Inventory {
             return InventoryType.MERCHANT;
         } else if (inventory instanceof TileEntityBeacon) {
             return InventoryType.BEACON;
-        } else if (inventory instanceof ContainerAnvilInventory) {
+        } else if (inventory instanceof InventoryRepair) {
             return InventoryType.ANVIL;
         } else {
             return InventoryType.CHEST;
@@ -450,14 +458,14 @@ public class CraftInventory implements Inventory {
     }
 
     public InventoryHolder getHolder() {
-        return inventory.getOwner();
+        return holder; // LavaBukkit
     }
 
     public int getMaxStackSize() {
-        return inventory.getMaxStackSize();
+        return inventory.getInventoryStackLimit();
     }
 
     public void setMaxStackSize(int size) {
-        inventory.setMaxStackSize(size);
+    	BukkitInventoryHelper.setMaxStackSize(inventory, size); // LavaBukkit
     }
 }

@@ -1,19 +1,19 @@
 package org.bukkit.craftbukkit.inventory;
 
-import net.minecraft.server.PlayerInventory;
+import net.minecraft.entity.player.InventoryPlayer;
 
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 
 public class CraftInventoryPlayer extends CraftInventory implements org.bukkit.inventory.PlayerInventory, EntityEquipment {
-    public CraftInventoryPlayer(net.minecraft.server.PlayerInventory inventory) {
-        super(inventory);
+    public CraftInventoryPlayer(InventoryPlayer inventory) {
+        super(inventory, null);
     }
 
     @Override
-    public PlayerInventory getInventory() {
-        return (PlayerInventory) inventory;
+    public InventoryPlayer getInventory() {
+        return (InventoryPlayer) inventory;
     }
 
     @Override
@@ -22,7 +22,7 @@ public class CraftInventoryPlayer extends CraftInventory implements org.bukkit.i
     }
 
     public ItemStack getItemInHand() {
-        return CraftItemStack.asCraftMirror(getInventory().getItemInHand());
+        return CraftItemStack.asCraftMirror(getInventory().getCurrentItem());
     }
 
     public void setItemInHand(ItemStack stack) {
@@ -30,7 +30,7 @@ public class CraftInventoryPlayer extends CraftInventory implements org.bukkit.i
     }
 
     public int getHeldItemSlot() {
-        return getInventory().itemInHandIndex;
+        return getInventory().currentItem;
     }
 
     public ItemStack getHelmet() {
@@ -66,7 +66,7 @@ public class CraftInventoryPlayer extends CraftInventory implements org.bukkit.i
     }
 
     public ItemStack[] getArmorContents() {
-        net.minecraft.server.ItemStack[] mcItems = getInventory().getArmorContents();
+        net.minecraft.item.ItemStack[] mcItems = getInventory().armorInventory;
         ItemStack[] ret = new ItemStack[mcItems.length];
 
         for (int i = 0; i < mcItems.length; i++) {
@@ -119,7 +119,7 @@ public class CraftInventoryPlayer extends CraftInventory implements org.bukkit.i
 
     @Override
     public HumanEntity getHolder() {
-        return (HumanEntity) inventory.getOwner();
+        return getInventory().player.getBukkitEntity(); // LavaBukkit
     }
 
     public float getItemInHandDropChance() {

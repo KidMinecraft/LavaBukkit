@@ -1,34 +1,27 @@
 package org.bukkit.craftbukkit.inventory;
 
-import java.util.ArrayList;
-import java.util.List;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.inventory.IInventory;
+import net.minecraft.item.ItemStack;
 
-import org.bukkit.craftbukkit.entity.CraftHumanEntity;
-import org.bukkit.entity.HumanEntity;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.InventoryHolder;
 
-import net.minecraft.server.EntityHuman;
-import net.minecraft.server.IInventory;
-import net.minecraft.server.ItemStack;
-
 public class CraftInventoryCustom extends CraftInventory {
     public CraftInventoryCustom(InventoryHolder owner, InventoryType type) {
-        super(new MinecraftInventory(owner, type));
+        super(new MinecraftInventory(owner, type), owner);
     }
 
     public CraftInventoryCustom(InventoryHolder owner, int size) {
-        super(new MinecraftInventory(owner, size));
+        super(new MinecraftInventory(owner, size), owner);
     }
 
     public CraftInventoryCustom(InventoryHolder owner, int size, String title) {
-        super(new MinecraftInventory(owner, size, title));
+        super(new MinecraftInventory(owner, size, title), owner);
     }
 
     static class MinecraftInventory implements IInventory {
         private final ItemStack[] items;
-        private int maxStack = MAX_STACK;
-        private final List<HumanEntity> viewers;
         private final String title;
         private InventoryType type;
         private final InventoryHolder owner;
@@ -45,96 +38,79 @@ public class CraftInventoryCustom extends CraftInventory {
         public MinecraftInventory(InventoryHolder owner, int size, String title) {
             this.items = new ItemStack[size];
             this.title = title;
-            this.viewers = new ArrayList<HumanEntity>();
             this.owner = owner;
             this.type = InventoryType.CHEST;
         }
 
-        public int getSize() {
+        public int getSizeInventory() {
             return items.length;
         }
 
-        public ItemStack getItem(int i) {
+        public ItemStack getStackInSlot(int i) {
             return items[i];
         }
 
-        public ItemStack splitStack(int i, int j) {
-            ItemStack stack = this.getItem(i);
+        public ItemStack decrStackSize(int i, int j) {
+            ItemStack stack = this.getStackInSlot(i);
             ItemStack result;
             if (stack == null) return null;
-            if (stack.count <= j) {
-                this.setItem(i, null);
+            if (stack.stackSize <= j) {
+                this.setInventorySlotContents(i, null);
                 result = stack;
             } else {
                 result = CraftItemStack.copyNMSStack(stack, j);
-                stack.count -= j;
+                stack.stackSize -= j;
             }
-            this.update();
+            this.onInventoryChanged();
             return result;
         }
 
-        public ItemStack splitWithoutUpdate(int i) {
-            ItemStack stack = this.getItem(i);
+        public ItemStack getStackInSlotOnClosing(int i) {
+            ItemStack stack = this.getStackInSlot(i);
             ItemStack result;
             if (stack == null) return null;
-            if (stack.count <= 1) {
-                this.setItem(i, null);
+            if (stack.stackSize <= 1) {
+                this.setInventorySlotContents(i, null);
                 result = stack;
             } else {
                 result = CraftItemStack.copyNMSStack(stack, 1);
-                stack.count -= 1;
+                stack.stackSize -= 1;
             }
             return result;
         }
 
-        public void setItem(int i, ItemStack itemstack) {
+        public void setInventorySlotContents(int i, ItemStack itemstack) {
             items[i] = itemstack;
-            if (itemstack != null && this.getMaxStackSize() > 0 && itemstack.count > this.getMaxStackSize()) {
-                itemstack.count = this.getMaxStackSize();
+            if (itemstack != null && this.getInventoryStackLimit() > 0 && itemstack.stackSize > this.getInventoryStackLimit()) {
+                itemstack.stackSize = this.getInventoryStackLimit();
             }
         }
 
-        public String getName() {
+        public String getInvName() {
             return title;
         }
 
-        public int getMaxStackSize() {
-            return maxStack;
+        public int getInventoryStackLimit() {
+            return 64;
         }
 
-        public void setMaxStackSize(int size) {
-            maxStack = size;
-        }
+        public void onInventoryChanged() {}
 
-        public void update() {}
-
-        public boolean a_(EntityHuman entityhuman) {
+        public boolean isUseableByPlayer(EntityPlayer entityhuman) {
             return true;
         }
 
         public ItemStack[] getContents() {
             return items;
         }
-
-        public void onOpen(CraftHumanEntity who) {
-            viewers.add(who);
-        }
-
-        public void onClose(CraftHumanEntity who) {
-            viewers.remove(who);
-        }
-
-        public List<HumanEntity> getViewers() {
-            return viewers;
-        }
-
+        
         public InventoryType getType() {
             return type;
         }
 
-        public void f() {}
+        public void openChest() {}
 
-        public void g() {}
+        public void closeChest() {}
 
         public InventoryHolder getOwner() {
             return owner;

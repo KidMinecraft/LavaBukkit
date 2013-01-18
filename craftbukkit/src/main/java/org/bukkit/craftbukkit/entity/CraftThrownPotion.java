@@ -2,13 +2,12 @@ package org.bukkit.craftbukkit.entity;
 
 import java.util.Collection;
 
-import net.minecraft.server.EntityPotion;
+import net.minecraft.entity.projectile.EntityPotion;
 
 import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.ThrownPotion;
 import org.bukkit.potion.Potion;
-import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionEffect;
 
 public class CraftThrownPotion extends CraftProjectile implements ThrownPotion {
@@ -20,7 +19,7 @@ public class CraftThrownPotion extends CraftProjectile implements ThrownPotion {
 
     public Collection<PotionEffect> getEffects() {
         if (effects == null) {
-            effects = Potion.getBrewer().getEffectsFromDamage(getHandle().getPotionValue());
+            effects = Potion.getBrewer().getEffectsFromDamage(getHandle().getPotionDamage());
         }
 
         return effects;

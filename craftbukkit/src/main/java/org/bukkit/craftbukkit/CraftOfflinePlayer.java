@@ -5,10 +5,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.minecraft.server.BanEntry;
-import net.minecraft.server.EntityPlayer;
-import net.minecraft.server.NBTTagCompound;
-import net.minecraft.server.WorldNBTStorage;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.server.management.BanEntry;
+import net.minecraft.world.storage.SaveHandler;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -24,12 +24,12 @@ import org.bukkit.plugin.Plugin;
 public class CraftOfflinePlayer implements OfflinePlayer, ConfigurationSerializable {
     private final String name;
     private final CraftServer server;
-    private final WorldNBTStorage storage;
+    private final SaveHandler storage;
 
     protected CraftOfflinePlayer(CraftServer server, String name) {
         this.server = server;
         this.name = name;
-        this.storage = (WorldNBTStorage) (server.console.worlds.get(0).getDataManager());
+        this.storage = (SaveHandler) (server.console.worldServerForDimension(0).getSaveHandler());
     }
 
     public boolean isOnline() {
@@ -45,7 +45,7 @@ public class CraftOfflinePlayer implements OfflinePlayer, ConfigurationSerializa
     }
 
     public boolean isOp() {
-        return server.getHandle().isOp(getName().toLowerCase());
+        return server.getHandle().areCommandsAllowed(getName().toLowerCase());
     }
 
     public void setOp(boolean value) {
@@ -59,29 +59,29 @@ public class CraftOfflinePlayer implements OfflinePlayer, ConfigurationSerializa
     }
 
     public boolean isBanned() {
-        return server.getHandle().getNameBans().isBanned(name.toLowerCase());
+        return server.getHandle().getBannedPlayers().isBanned(name.toLowerCase());
     }
 
     public void setBanned(boolean value) {
         if (value) {
             BanEntry entry = new BanEntry(name.toLowerCase());
-            server.getHandle().getNameBans().add(entry);
+            server.getHandle().getBannedPlayers().put(entry);
         } else {
-            server.getHandle().getNameBans().remove(name.toLowerCase());
+            server.getHandle().getBannedPlayers().remove(name.toLowerCase());
         }
 
-        server.getHandle().getNameBans().save();
+        server.getHandle().getBannedPlayers().saveToFileWithHeader();
     }
 
     public boolean isWhitelisted() {
-        return server.getHandle().getWhitelisted().contains(name.toLowerCase());
+        return server.getHandle().getWhiteListedPlayers().contains(name.toLowerCase());
     }
 
     public void setWhitelisted(boolean value) {
         if (value) {
-            server.getHandle().addWhitelist(name.toLowerCase());
+            server.getHandle().addToWhiteList(name.toLowerCase());
         } else {
-            server.getHandle().removeWhitelist(name.toLowerCase());
+            server.getHandle().removeFromWhitelist(name.toLowerCase());
         }
     }
 
@@ -103,10 +103,10 @@ public class CraftOfflinePlayer implements OfflinePlayer, ConfigurationSerializa
     }
 
     public Player getPlayer() {
-        for (Object obj : server.getHandle().players) {
-            EntityPlayer player = (EntityPlayer) obj;
-            if (player.name.equalsIgnoreCase(getName())) {
-                return (player.playerConnection != null) ? player.playerConnection.getPlayer() : null;
+        for (Object obj : server.getHandle().playerEntityList) {
+            EntityPlayerMP player = (EntityPlayerMP) obj;
+            if (player.username.equalsIgnoreCase(getName())) {
+                return (player.playerNetServerHandler != null) ? player.playerNetServerHandler.getPlayer2() : null;
             }
         }
 
@@ -144,9 +144,9 @@ public class CraftOfflinePlayer implements OfflinePlayer, ConfigurationSerializa
 
         if (result != null) {
             if (!result.hasKey("bukkit")) {
-                result.setCompound("bukkit", new NBTTagCompound());
+                result.setCompoundTag("bukkit", new NBTTagCompound());
             }
-            result = result.getCompound("bukkit");
+            result = result.getCompoundTag("bukkit");
         }
 
         return result;
@@ -205,7 +205,7 @@ public class CraftOfflinePlayer implements OfflinePlayer, ConfigurationSerializa
             if (spawnWorld.equals("")) {
                 spawnWorld = server.getWorlds().get(0).getName();
             }
-            return new Location(server.getWorld(spawnWorld), data.getInt("SpawnX"), data.getInt("SpawnY"), data.getInt("SpawnZ"));
+            return new Location(server.getWorld(spawnWorld), data.getInteger("SpawnX"), data.getInteger("SpawnY"), data.getInteger("SpawnZ"));
         }
         return null;
     }

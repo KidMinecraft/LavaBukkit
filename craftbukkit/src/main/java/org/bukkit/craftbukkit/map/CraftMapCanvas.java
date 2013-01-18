@@ -2,6 +2,7 @@ package org.bukkit.craftbukkit.map;
 
 import java.awt.Image;
 import java.util.Arrays;
+
 import org.bukkit.map.MapCanvas;
 import org.bukkit.map.MapCursorCollection;
 import org.bukkit.map.MapFont;
@@ -37,7 +38,7 @@ public class CraftMapCanvas implements MapCanvas {
             return;
         if (buffer[y * 128 + x] != color) {
             buffer[y * 128 + x] = color;
-            mapView.worldMap.flagDirty(x, y, y);
+            mapView.worldMap.setColumnDirty(x, y, y);
         }
     }
 

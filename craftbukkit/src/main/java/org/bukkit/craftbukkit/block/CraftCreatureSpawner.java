@@ -1,6 +1,6 @@
 package org.bukkit.craftbukkit.block;
 
-import net.minecraft.server.TileEntityMobSpawner;
+import net.minecraft.tileentity.TileEntityMobSpawner;
 
 import org.bukkit.block.Block;
 import org.bukkit.block.CreatureSpawner;
@@ -21,16 +21,16 @@ public class CraftCreatureSpawner extends CraftBlockState implements CreatureSpa
 
     @Deprecated
     public CreatureType getCreatureType() {
-        return CreatureType.fromName(spawner.mobName);
+        return CreatureType.fromName(spawner.func_92015_a());
     }
 
     public EntityType getSpawnedType() {
-        return EntityType.fromName(spawner.mobName);
+        return EntityType.fromName(spawner.func_92015_a());
     }
 
     @Deprecated
     public void setCreatureType(CreatureType creatureType) {
-        spawner.mobName = creatureType.getName();
+        spawner.setMobID(creatureType.getName());
     }
 
     public void setSpawnedType(EntityType entityType) {
@@ -38,12 +38,12 @@ public class CraftCreatureSpawner extends CraftBlockState implements CreatureSpa
             throw new IllegalArgumentException("Can't spawn EntityType " + entityType + " from mobspawners!");
         }
 
-        spawner.mobName = entityType.getName();
+        spawner.setMobID(entityType.getName());
     }
 
     @Deprecated
     public String getCreatureTypeId() {
-        return spawner.mobName;
+        return spawner.func_92015_a();
     }
 
     @Deprecated
@@ -52,7 +52,7 @@ public class CraftCreatureSpawner extends CraftBlockState implements CreatureSpa
     }
 
     public String getCreatureTypeName() {
-        return spawner.mobName;
+        return spawner.func_92015_a();
     }
 
     public void setCreatureTypeByName(String creatureType) {
@@ -65,11 +65,11 @@ public class CraftCreatureSpawner extends CraftBlockState implements CreatureSpa
     }
 
     public int getDelay() {
-        return spawner.spawnDelay;
+        return spawner.delay;
     }
 
     public void setDelay(int delay) {
-        spawner.spawnDelay = delay;
+        spawner.delay = delay;
     }
 
 }

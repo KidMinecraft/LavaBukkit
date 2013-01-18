@@ -1,7 +1,8 @@
 package org.bukkit.craftbukkit.util;
 
+
 public class LongHash {
-    public static long toLong(int msw, int lsw) {
+	public static long toLong(int msw, int lsw) {
         return ((long) msw << 32) + lsw - Integer.MIN_VALUE;
     }
 

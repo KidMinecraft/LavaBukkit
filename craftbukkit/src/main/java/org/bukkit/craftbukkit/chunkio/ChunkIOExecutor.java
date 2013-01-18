@@ -1,9 +1,11 @@
 package org.bukkit.craftbukkit.chunkio;
 
-import net.minecraft.server.Chunk;
-import net.minecraft.server.ChunkProviderServer;
-import net.minecraft.server.ChunkRegionLoader;
-import net.minecraft.server.World;
+import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.storage.AnvilChunkLoader;
+import net.minecraft.world.chunk.storage.ChunkLoader;
+import net.minecraft.world.gen.ChunkProviderServer;
+
 import org.bukkit.craftbukkit.util.AsynchronousExecutor;
 import org.bukkit.craftbukkit.util.LongHash;
 
@@ -17,7 +19,7 @@ public class ChunkIOExecutor {
         instance.get(new QueuedChunk(LongHash.toLong(x, z), null, world, null));
     }
 
-    public static void queueChunkLoad(World world, ChunkRegionLoader loader, ChunkProviderServer provider, int x, int z, Runnable runnable) {
+    public static void queueChunkLoad(World world, AnvilChunkLoader loader, ChunkProviderServer provider, int x, int z, Runnable runnable) {
         instance.add(new QueuedChunk(LongHash.toLong(x, z), loader, world, provider), runnable);
     }
 

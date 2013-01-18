@@ -1,8 +1,10 @@
 package org.bukkit.craftbukkit.entity;
 
-import net.minecraft.server.EntityFireworks;
-import net.minecraft.server.Item;
-import net.minecraft.server.ItemStack;
+import java.util.Random;
+
+import net.minecraft.entity.item.EntityFireworkRocket;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 
 import org.bukkit.Material;
 import org.bukkit.craftbukkit.CraftServer;
@@ -11,22 +13,20 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Firework;
 import org.bukkit.inventory.meta.FireworkMeta;
 
-import java.util.Random;
-
 public class CraftFirework extends CraftEntity implements Firework {
     private static final int FIREWORK_ITEM_INDEX = 8;
 
     private final Random random = new Random();
     private final CraftItemStack item;
 
-    public CraftFirework(CraftServer server, EntityFireworks entity) {
+    public CraftFirework(CraftServer server, EntityFireworkRocket entity) {
         super(server, entity);
 
-        ItemStack item = getHandle().getDataWatcher().f(FIREWORK_ITEM_INDEX);
+        ItemStack item = getHandle().getDataWatcher().getWatchableObjectItemStack(FIREWORK_ITEM_INDEX);
 
         if (item == null) {
-            item = new ItemStack(Item.FIREWORKS);
-            getHandle().getDataWatcher().a(FIREWORK_ITEM_INDEX, item); // register
+            item = new ItemStack(Item.field_92052_bU);
+            getHandle().getDataWatcher().addObject(FIREWORK_ITEM_INDEX, item); // register
         }
 
         this.item = CraftItemStack.asCraftMirror(item);
@@ -38,8 +38,8 @@ public class CraftFirework extends CraftEntity implements Firework {
     }
 
     @Override
-    public EntityFireworks getHandle() {
-        return (EntityFireworks) entity;
+    public EntityFireworkRocket getHandle() {
+        return (EntityFireworkRocket) entity;
     }
 
     @Override
@@ -59,8 +59,8 @@ public class CraftFirework extends CraftEntity implements Firework {
         item.setItemMeta(meta);
 
         // Copied from EntityFireworks constructor, update firework lifetime/power
-        getHandle().b = 10 * (1 + meta.getPower()) + random.nextInt(6) + random.nextInt(7);
+        getHandle().field_92010_b = 10 * (1 + meta.getPower()) + random.nextInt(6) + random.nextInt(7);
 
-        getHandle().getDataWatcher().h(FIREWORK_ITEM_INDEX); // Update
+        getHandle().getDataWatcher().func_82708_h(FIREWORK_ITEM_INDEX); // Update
     }
 }

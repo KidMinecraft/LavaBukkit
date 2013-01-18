@@ -1,6 +1,7 @@
 package org.bukkit.craftbukkit.block;
 
-import net.minecraft.server.TileEntityBrewingStand;
+import net.minecraft.tileentity.TileEntityBrewingStand;
+
 import org.bukkit.block.Block;
 import org.bukkit.block.BrewingStand;
 import org.bukkit.craftbukkit.CraftWorld;
@@ -27,17 +28,17 @@ public class CraftBrewingStand extends CraftBlockState implements BrewingStand {
         boolean result = super.update(force);
 
         if (result) {
-            brewingStand.update();
+            brewingStand.onInventoryChanged();
         }
 
         return result;
     }
 
     public int getBrewingTime() {
-        return brewingStand.brewTime;
+        return brewingStand.getBrewTime();
     }
 
     public void setBrewingTime(int brewTime) {
-        brewingStand.brewTime = brewTime;
+        brewingStand.setBrewTime(brewTime);
     }
 }

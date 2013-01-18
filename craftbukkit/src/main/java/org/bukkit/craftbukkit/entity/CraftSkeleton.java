@@ -1,6 +1,6 @@
 package org.bukkit.craftbukkit.entity;
 
-import net.minecraft.server.EntitySkeleton;
+import net.minecraft.entity.monster.EntitySkeleton;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.craftbukkit.CraftServer;

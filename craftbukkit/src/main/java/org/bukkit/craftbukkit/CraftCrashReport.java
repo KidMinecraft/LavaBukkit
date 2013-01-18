@@ -10,14 +10,20 @@ import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 
+import cpw.mods.fml.common.ICrashCallable;
+
 import net.minecraft.server.MinecraftServer;
 
-public class CraftCrashReport implements Callable {
+public class CraftCrashReport implements ICrashCallable {
+	
+	public String getLabel() {
+		return "CraftBukkit information";
+	}
 
-    public Object call() throws Exception {
+    public String call() throws Exception {
         StringWriter value = new StringWriter();
         try {
-            value.append("\n   Running: ").append(Bukkit.getName()).append(" version ").append(Bukkit.getVersion()).append(" (Implementing API version ").append(Bukkit.getBukkitVersion()).append(") ").append(String.valueOf(MinecraftServer.getServer().getOnlineMode()));
+            value.append("\n   Running: ").append(Bukkit.getName()).append(" version ").append(Bukkit.getVersion()).append(" (Implementing API version ").append(Bukkit.getBukkitVersion()).append(") ").append(String.valueOf(MinecraftServer.getServer().isServerInOnlineMode()));
             value.append("\n   Plugins: {");
             for (Plugin plugin : Bukkit.getPluginManager().getPlugins()) {
                 PluginDescriptionFile description = plugin.getDescription();

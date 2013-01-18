@@ -1,6 +1,6 @@
 package org.bukkit.craftbukkit.entity;
 
-import net.minecraft.server.EntityTNTPrimed;
+import net.minecraft.entity.item.EntityTNTPrimed;
 
 import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.entity.EntityType;
@@ -29,11 +29,11 @@ public class CraftTNTPrimed extends CraftEntity implements TNTPrimed {
     }
 
     public int getFuseTicks() {
-        return getHandle().fuseTicks;
+        return getHandle().fuse;
     }
 
     public void setFuseTicks(int fuseTicks) {
-        getHandle().fuseTicks = fuseTicks;
+        getHandle().fuse = fuseTicks;
     }
 
     @Override

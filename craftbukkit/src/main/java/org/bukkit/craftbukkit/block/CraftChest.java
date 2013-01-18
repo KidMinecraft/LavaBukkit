@@ -1,7 +1,6 @@
 package org.bukkit.craftbukkit.block;
 
-import net.minecraft.server.TileEntityChest;
-import org.bukkit.Location;
+import net.minecraft.tileentity.TileEntityChest;
 
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -23,7 +22,7 @@ public class CraftChest extends CraftBlockState implements Chest {
     }
 
     public Inventory getBlockInventory() {
-        return new CraftInventory(chest);
+        return new CraftInventory(chest, chest.getBlockStateCB());
     }
 
     public Inventory getInventory() {
@@ -31,32 +30,38 @@ public class CraftChest extends CraftBlockState implements Chest {
         int y = getY();
         int z = getZ();
         // The logic here is basically identical to the logic in BlockChest.interact
-        CraftInventory inventory = new CraftInventory(chest);
+        CraftInventory inventory = new CraftInventory(chest, chest.getBlockStateCB());
         if (world.getBlockTypeIdAt(x - 1, y, z) == Material.CHEST.getId()) {
-            CraftInventory left = new CraftInventory((TileEntityChest)world.getHandle().getTileEntity(x - 1, y, z));
+            CraftInventory left = getChestInventory((TileEntityChest)world.getHandle().getBlockTileEntity(x - 1, y, z));
             inventory = new CraftInventoryDoubleChest(left, inventory);
         }
         if (world.getBlockTypeIdAt(x + 1, y, z) == Material.CHEST.getId()) {
-            CraftInventory right = new CraftInventory((TileEntityChest) world.getHandle().getTileEntity(x + 1, y, z));
+            CraftInventory right = getChestInventory((TileEntityChest) world.getHandle().getBlockTileEntity(x + 1, y, z));
             inventory = new CraftInventoryDoubleChest(inventory, right);
         }
         if (world.getBlockTypeIdAt(x, y, z - 1) == Material.CHEST.getId()) {
-            CraftInventory left = new CraftInventory((TileEntityChest) world.getHandle().getTileEntity(x, y, z - 1));
+            CraftInventory left = getChestInventory((TileEntityChest) world.getHandle().getBlockTileEntity(x, y, z - 1));
             inventory = new CraftInventoryDoubleChest(left, inventory);
         }
         if (world.getBlockTypeIdAt(x, y, z + 1) == Material.CHEST.getId()) {
-            CraftInventory right = new CraftInventory((TileEntityChest) world.getHandle().getTileEntity(x, y, z + 1));
+            CraftInventory right = getChestInventory((TileEntityChest) world.getHandle().getBlockTileEntity(x, y, z + 1));
             inventory = new CraftInventoryDoubleChest(inventory, right);
         }
         return inventory;
     }
+    
+    // LavaBukkit start
+    public CraftInventory getChestInventory(TileEntityChest tile) {
+    	return new CraftInventory(tile, tile.getBlockStateCB());
+    }
+    // LavaBukkit end
 
     @Override
     public boolean update(boolean force) {
         boolean result = super.update(force);
 
         if (result) {
-            chest.update();
+            chest.onInventoryChanged();
         }
 
         return result;

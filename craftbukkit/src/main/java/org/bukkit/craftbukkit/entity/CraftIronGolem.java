@@ -1,6 +1,7 @@
 package org.bukkit.craftbukkit.entity;
 
-import net.minecraft.server.EntityIronGolem;
+import net.minecraft.entity.monster.EntityIronGolem;
+
 import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.IronGolem;
@@ -21,11 +22,11 @@ public class CraftIronGolem extends CraftGolem implements IronGolem {
     }
 
     public boolean isPlayerCreated() {
-        return getHandle().p();
+        return getHandle().isPlayerCreated();
     }
 
     public void setPlayerCreated(boolean playerCreated) {
-        getHandle().f(playerCreated);
+        getHandle().setPlayerCreated(playerCreated);
     }
 
     @Override

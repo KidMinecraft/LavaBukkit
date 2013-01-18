@@ -1,6 +1,7 @@
 package org.bukkit.craftbukkit.entity;
 
-import net.minecraft.server.EntityHanging;
+import net.minecraft.entity.EntityHanging;
+
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.craftbukkit.CraftServer;
@@ -23,10 +24,10 @@ public class CraftHanging extends CraftEntity implements Hanging {
     public boolean setFacingDirection(BlockFace face, boolean force) {
         Block block = getLocation().getBlock().getRelative(getAttachedFace()).getRelative(face.getOppositeFace()).getRelative(getFacing());
         EntityHanging hanging = getHandle();
-        int x = hanging.x, y = hanging.y, z = hanging.z, dir = hanging.direction;
-        hanging.x = block.getX();
-        hanging.y = block.getY();
-        hanging.z = block.getZ();
+        int x = hanging.xPosition, y = hanging.yPosition, z = hanging.zPosition, dir = hanging.hangingDirection;
+        hanging.xPosition = block.getX();
+        hanging.yPosition = block.getY();
+        hanging.zPosition = block.getZ();
         switch (face) {
             case SOUTH:
             default:
@@ -42,11 +43,11 @@ public class CraftHanging extends CraftEntity implements Hanging {
                 getHandle().setDirection(3);
                 break;
         }
-        if (!force && !hanging.survives()) {
+        if (!force && !hanging.onValidSurface()) {
             // Revert since it doesn't fit
-            hanging.x = x;
-            hanging.y = y;
-            hanging.z = z;
+            hanging.xPosition = x;
+            hanging.yPosition = y;
+            hanging.zPosition = z;
             hanging.setDirection(dir);
             return false;
         }
@@ -54,7 +55,7 @@ public class CraftHanging extends CraftEntity implements Hanging {
     }
 
     public BlockFace getFacing() {
-        switch (this.getHandle().direction) {
+        switch (this.getHandle().hangingDirection) {
             case 0:
             default:
                 return BlockFace.SOUTH;

@@ -1,6 +1,6 @@
 package org.bukkit.craftbukkit.updater;
 
-import com.google.gson.*;
+//import com.google.gson.*;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
@@ -16,14 +16,14 @@ import java.util.logging.Logger;
 public class BukkitDLUpdaterService {
     private static final String API_PREFIX_ARTIFACT = "/api/1.0/downloads/projects/craftbukkit/view/";
     private static final String API_PREFIX_CHANNEL = "/api/1.0/downloads/channels/";
-    private static final DateDeserializer dateDeserializer = new DateDeserializer();
+    //private static final DateDeserializer dateDeserializer = new DateDeserializer();
     private final String host;
 
     public BukkitDLUpdaterService(String host) {
         this.host = host;
     }
 
-    public ArtifactDetails getArtifact(String slug, String name) {
+    /*public ArtifactDetails getArtifact(String slug, String name) {
         try {
             return fetchArtifact(slug);
         } catch (UnsupportedEncodingException ex) {
@@ -97,5 +97,5 @@ public class BukkitDLUpdaterService {
                 throw new JsonParseException("Date is not formatted correctly", ex);
             }
         }
-    }
+    }*/
 }

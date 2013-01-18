@@ -71,7 +71,7 @@ public class AutoUpdater {
     public void check(final String currentSlug) {
         if (!isEnabled()) return;
 
-        new Thread() {
+        /*new Thread() {
             @Override
             public void run() {
                 current = service.getArtifact(currentSlug, "information about this CraftBukkit version; perhaps you are running a custom one?");
@@ -122,6 +122,6 @@ public class AutoUpdater {
                     }
                 }
             }
-        }.start();
+        }.start();*/
     }
 }

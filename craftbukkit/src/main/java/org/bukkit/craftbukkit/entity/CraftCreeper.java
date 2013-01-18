@@ -1,6 +1,6 @@
 package org.bukkit.craftbukkit.entity;
 
-import net.minecraft.server.EntityCreeper;
+import net.minecraft.entity.monster.EntityCreeper;
 
 import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.entity.Creeper;
@@ -14,7 +14,7 @@ public class CraftCreeper extends CraftMonster implements Creeper {
     }
 
     public boolean isPowered() {
-        return getHandle().isPowered();
+        return getHandle().getPowered();
     }
 
     public void setPowered(boolean powered) {

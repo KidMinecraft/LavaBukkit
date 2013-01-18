@@ -1,6 +1,6 @@
 package org.bukkit.craftbukkit.entity;
 
-import net.minecraft.server.EntityArrow;
+import net.minecraft.entity.projectile.EntityArrow;
 
 import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.entity.Arrow;
@@ -14,8 +14,8 @@ public class CraftArrow extends AbstractProjectile implements Arrow {
     }
 
     public LivingEntity getShooter() {
-        if (getHandle().shooter != null) {
-            return (LivingEntity) getHandle().shooter.getBukkitEntity();
+        if (getHandle().shootingEntity != null) {
+            return (LivingEntity) getHandle().shootingEntity.getBukkitEntity();
         }
 
         return null;
@@ -23,7 +23,7 @@ public class CraftArrow extends AbstractProjectile implements Arrow {
 
     public void setShooter(LivingEntity shooter) {
         if (shooter instanceof CraftLivingEntity) {
-            getHandle().shooter = ((CraftLivingEntity) shooter).getHandle();
+            getHandle().shootingEntity = ((CraftLivingEntity) shooter).getHandle();
         }
     }
 

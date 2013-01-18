@@ -13,9 +13,9 @@ public class ShortConsoleLogFormatter extends Formatter {
     private final SimpleDateFormat date;
 
     public ShortConsoleLogFormatter(MinecraftServer server) {
-        OptionSet options = server.options;
-        SimpleDateFormat date = null;
-
+    	SimpleDateFormat date = null;
+    	/*OptionSet options = server.options;
+        
         if (options.has("date-format")) {
             try {
                 Object object = options.valueOf("date-format");
@@ -26,13 +26,13 @@ public class ShortConsoleLogFormatter extends Formatter {
             } catch (OptionException ex) {
                 System.err.println("Given date format is not valid. Falling back to default.");
             }
-        } else if (options.has("nojline")) {
+        } else if (options.has("nojline"))*/ {
             date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         }
 
-        if (date == null) {
+        /*if (date == null) {
             date = new SimpleDateFormat("HH:mm:ss");
-        }
+        }*/
 
         this.date = date;
     }

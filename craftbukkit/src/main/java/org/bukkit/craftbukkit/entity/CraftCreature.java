@@ -1,7 +1,8 @@
 package org.bukkit.craftbukkit.entity;
 
-import net.minecraft.server.EntityCreature;
-import net.minecraft.server.EntityLiving;
+import net.minecraft.entity.EntityCreature;
+import net.minecraft.entity.EntityLiving;
+
 import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.entity.Creature;
 import org.bukkit.entity.LivingEntity;
@@ -14,18 +15,18 @@ public class CraftCreature extends CraftLivingEntity implements Creature {
     public void setTarget(LivingEntity target) {
         EntityCreature entity = getHandle();
         if (target == null) {
-            entity.target = null;
+            entity.entityToAttack = null;
         } else if (target instanceof CraftLivingEntity) {
-            entity.target = ((CraftLivingEntity) target).getHandle();
-            entity.pathEntity = entity.world.findPath(entity, entity.target, 16.0F, true, false, false, true);
+            entity.entityToAttack = ((CraftLivingEntity) target).getHandle();
+            entity.pathToEntity = entity.worldObj.getPathEntityToEntity(entity, entity.entityToAttack, 16.0F, true, false, false, true);
         }
     }
 
     public CraftLivingEntity getTarget() {
-        if (getHandle().target == null) return null;
-        if (!(getHandle().target instanceof EntityLiving)) return null;
+        if (getHandle().entityToAttack == null) return null;
+        if (!(getHandle().entityToAttack instanceof EntityLiving)) return null;
 
-        return (CraftLivingEntity) getHandle().target.getBukkitEntity();
+        return (CraftLivingEntity) getHandle().entityToAttack.getBukkitEntity();
     }
 
     @Override

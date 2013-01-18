@@ -11,10 +11,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-import net.minecraft.server.NBTBase;
-import net.minecraft.server.NBTTagCompound;
-import net.minecraft.server.NBTTagList;
-import net.minecraft.server.NBTTagString;
+import net.minecraft.nbt.NBTBase;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
+import net.minecraft.nbt.NBTTagString;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.Material;
@@ -226,18 +226,18 @@ class CraftMetaItem implements ItemMeta, Repairable {
 
     CraftMetaItem(NBTTagCompound tag) {
         if (tag.hasKey(DISPLAY.NBT)) {
-            NBTTagCompound display = tag.getCompound(DISPLAY.NBT);
+            NBTTagCompound display = tag.getCompoundTag(DISPLAY.NBT);
 
             if (display.hasKey(NAME.NBT)) {
                 displayName = display.getString(NAME.NBT);
             }
 
             if (display.hasKey(LORE.NBT)) {
-                NBTTagList list = display.getList(LORE.NBT);
-                lore = new ArrayList<String>(list.size());
+                NBTTagList list = display.getTagList(LORE.NBT);
+                lore = new ArrayList<String>(list.tagCount());
 
-                for (int index = 0; index < list.size(); index++) {
-                    String line = ((NBTTagString) list.get(index)).data;
+                for (int index = 0; index < list.tagCount(); index++) {
+                    String line = ((NBTTagString) list.tagAt(index)).data;
                     lore.add(line);
                 }
             }
@@ -246,7 +246,7 @@ class CraftMetaItem implements ItemMeta, Repairable {
         this.enchantments = buildEnchantments(tag, ENCHANTMENTS);
 
         if (tag.hasKey(REPAIR.NBT)) {
-            repairCost = tag.getInt(REPAIR.NBT);
+            repairCost = tag.getInteger(REPAIR.NBT);
         }
     }
 
@@ -255,12 +255,12 @@ class CraftMetaItem implements ItemMeta, Repairable {
             return null;
         }
 
-        NBTTagList ench = tag.getList(key.NBT);
-        Map<Enchantment, Integer> enchantments = new HashMap<Enchantment, Integer>(ench.size());
+        NBTTagList ench = tag.getTagList(key.NBT);
+        Map<Enchantment, Integer> enchantments = new HashMap<Enchantment, Integer>(ench.tagCount());
 
-        for (int i = 0; i < ench.size(); i++) {
-            int id = 0xffff & ((NBTTagCompound) ench.get(i)).getShort(ENCHANTMENTS_ID.NBT);
-            int level = 0xffff & ((NBTTagCompound) ench.get(i)).getShort(ENCHANTMENTS_LVL.NBT);
+        for (int i = 0; i < ench.tagCount(); i++) {
+            int id = 0xffff & ((NBTTagCompound) ench.tagAt(i)).getShort(ENCHANTMENTS_ID.NBT);
+            int level = 0xffff & ((NBTTagCompound) ench.tagAt(i)).getShort(ENCHANTMENTS_LVL.NBT);
 
             enchantments.put(Enchantment.getById(id), level);
         }
@@ -315,7 +315,7 @@ class CraftMetaItem implements ItemMeta, Repairable {
         applyEnchantments(enchantments, itemTag, ENCHANTMENTS);
 
         if (hasRepairCost()) {
-            itemTag.setInt(REPAIR.NBT, repairCost);
+            itemTag.setInteger(REPAIR.NBT, repairCost);
         }
     }
 
@@ -326,7 +326,7 @@ class CraftMetaItem implements ItemMeta, Repairable {
 
         NBTTagList tagList = new NBTTagList(key.NBT);
         for (int i = 0; i < list.size(); i++) {
-            tagList.add(new NBTTagString("", list.get(i)));
+            tagList.appendTag(new NBTTagString("", list.get(i)));
         }
 
         return tagList;
@@ -345,20 +345,20 @@ class CraftMetaItem implements ItemMeta, Repairable {
             subtag.setShort(ENCHANTMENTS_ID.NBT, (short) entry.getKey().getId());
             subtag.setShort(ENCHANTMENTS_LVL.NBT, entry.getValue().shortValue());
 
-            list.add(subtag);
+            list.appendTag(subtag);
         }
 
-        tag.set(key.NBT, list);
+        tag.setTag(key.NBT, list);
     }
 
     void setDisplayTag(NBTTagCompound tag, String key, NBTBase value) {
-        final NBTTagCompound display = tag.getCompound(DISPLAY.NBT);
+        final NBTTagCompound display = tag.getCompoundTag(DISPLAY.NBT);
 
         if (!tag.hasKey(DISPLAY.NBT)) {
-            tag.setCompound(DISPLAY.NBT, display);
+            tag.setCompoundTag(DISPLAY.NBT, display);
         }
 
-        display.set(key, value);
+        display.setTag(key, value);
     }
 
     @Overridden

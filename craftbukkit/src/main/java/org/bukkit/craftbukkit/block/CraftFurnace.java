@@ -1,6 +1,7 @@
 package org.bukkit.craftbukkit.block;
 
-import net.minecraft.server.TileEntityFurnace;
+import net.minecraft.tileentity.TileEntityFurnace;
+
 import org.bukkit.block.Block;
 import org.bukkit.block.Furnace;
 import org.bukkit.craftbukkit.CraftWorld;
@@ -27,25 +28,25 @@ public class CraftFurnace extends CraftBlockState implements Furnace {
         boolean result = super.update(force);
 
         if (result) {
-            furnace.update();
+            furnace.onInventoryChanged();
         }
 
         return result;
     }
 
     public short getBurnTime() {
-        return (short) furnace.burnTime;
+        return (short) furnace.furnaceBurnTime;
     }
 
     public void setBurnTime(short burnTime) {
-        furnace.burnTime = burnTime;
+        furnace.furnaceBurnTime = burnTime;
     }
 
     public short getCookTime() {
-        return (short) furnace.cookTime;
+        return (short) furnace.furnaceCookTime;
     }
 
     public void setCookTime(short cookTime) {
-        furnace.cookTime = cookTime;
+        furnace.furnaceCookTime = cookTime;
     }
 }

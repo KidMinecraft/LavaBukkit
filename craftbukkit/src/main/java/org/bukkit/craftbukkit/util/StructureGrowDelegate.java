@@ -3,7 +3,7 @@ package org.bukkit.craftbukkit.util;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.minecraft.server.World;
+import net.minecraft.world.World;
 
 import org.bukkit.BlockChangeDelegate;
 import org.bukkit.block.BlockState;

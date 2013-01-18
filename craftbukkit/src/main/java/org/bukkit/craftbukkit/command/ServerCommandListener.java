@@ -2,13 +2,13 @@ package org.bukkit.craftbukkit.command;
 
 import java.lang.reflect.Method;
 
-import net.minecraft.server.ChunkCoordinates;
-import net.minecraft.server.ICommandListener;
-import net.minecraft.server.LocaleLanguage;
+import net.minecraft.command.ICommandSender;
+import net.minecraft.util.ChunkCoordinates;
+import net.minecraft.util.StringTranslate;
 
 import org.bukkit.command.CommandSender;
 
-public class ServerCommandListener implements ICommandListener {
+public class ServerCommandListener implements ICommandSender {
     private final CommandSender commandSender;
     private final String prefix;
 
@@ -18,7 +18,8 @@ public class ServerCommandListener implements ICommandListener {
         this.prefix = parts[parts.length - 1];
     }
 
-    public void sendMessage(String msg) {
+    @Override
+    public void sendChatToPlayer(String msg) {
         this.commandSender.sendMessage(msg);
     }
 
@@ -26,7 +27,8 @@ public class ServerCommandListener implements ICommandListener {
         return commandSender;
     }
 
-    public String getName() {
+    @Override
+    public String getCommandSenderName() {
         try {
             Method getName = commandSender.getClass().getMethod("getName");
 
@@ -36,15 +38,18 @@ public class ServerCommandListener implements ICommandListener {
         return this.prefix;
     }
 
-    public String a(String s, Object... aobject) {
-        return LocaleLanguage.a().a(s, aobject);
+    @Override
+    public String translateString(String s, Object... aobject) {
+        return StringTranslate.getInstance().translateKeyFormat(s, aobject);
     }
 
-    public boolean a(int i, String s) {
+    @Override
+    public boolean canCommandSenderUseCommand(int i, String s) {
         return true;
     }
 
-    public ChunkCoordinates b() {
+    @Override
+    public ChunkCoordinates getPlayerCoordinates() {
         return new ChunkCoordinates(0, 0, 0);
     }
 }

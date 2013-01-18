@@ -1,14 +1,14 @@
 package org.bukkit.craftbukkit.block;
 
-import com.google.common.base.Strings;
-
-import net.minecraft.server.TileEntitySkull;
+import net.minecraft.tileentity.TileEntitySkull;
 
 import org.bukkit.SkullType;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Skull;
 import org.bukkit.craftbukkit.CraftWorld;
+
+import com.google.common.base.Strings;
 
 public class CraftSkull extends CraftBlockState implements Skull {
     private final TileEntitySkull skull;
@@ -186,8 +186,8 @@ public class CraftSkull extends CraftBlockState implements Skull {
 
         if (result) {
             skull.setSkullType(getSkullType(skullType), player);
-            skull.setRotation(rotation);
-            skull.update();
+            skull.setSkullRotation(rotation);
+            skull.onInventoryChanged();
         }
 
         return result;

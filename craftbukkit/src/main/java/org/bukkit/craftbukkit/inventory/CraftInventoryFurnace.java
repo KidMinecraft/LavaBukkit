@@ -1,14 +1,14 @@
 package org.bukkit.craftbukkit.inventory;
 
+import net.minecraft.tileentity.TileEntityFurnace;
+
 import org.bukkit.block.Furnace;
 import org.bukkit.inventory.FurnaceInventory;
 import org.bukkit.inventory.ItemStack;
 
-import net.minecraft.server.TileEntityFurnace;
-
 public class CraftInventoryFurnace extends CraftInventory implements FurnaceInventory {
     public CraftInventoryFurnace(TileEntityFurnace inventory) {
-        super(inventory);
+        super(inventory, inventory.getBlockStateCB());
     }
 
     public ItemStack getResult() {
@@ -37,6 +37,6 @@ public class CraftInventoryFurnace extends CraftInventory implements FurnaceInve
 
     @Override
     public Furnace getHolder() {
-        return (Furnace) inventory.getOwner();
+        return (Furnace)((TileEntityFurnace)inventory).getBlockStateCB();
     }
 }

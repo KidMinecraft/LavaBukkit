@@ -1,7 +1,7 @@
 package org.bukkit.craftbukkit.entity;
 
-import net.minecraft.server.EntityFireball;
-import net.minecraft.server.EntityLiving;
+import net.minecraft.entity.EntityLiving;
+import net.minecraft.entity.projectile.EntityFireball;
 
 import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.entity.EntityType;
@@ -31,8 +31,8 @@ public class CraftFireball extends AbstractProjectile implements Fireball {
     }
 
     public LivingEntity getShooter() {
-        if (getHandle().shooter != null) {
-            return (LivingEntity) getHandle().shooter.getBukkitEntity();
+        if (getHandle().shootingEntity != null) {
+            return (LivingEntity) getHandle().shootingEntity.getBukkitEntity();
         }
 
         return null;
@@ -40,12 +40,12 @@ public class CraftFireball extends AbstractProjectile implements Fireball {
 
     public void setShooter(LivingEntity shooter) {
         if (shooter instanceof CraftLivingEntity) {
-            getHandle().shooter = (EntityLiving) ((CraftLivingEntity) shooter).entity;
+            getHandle().shootingEntity = (EntityLiving) ((CraftLivingEntity) shooter).entity;
         }
     }
 
     public Vector getDirection() {
-        return new Vector(getHandle().dirX, getHandle().dirY, getHandle().dirZ);
+        return new Vector(getHandle().accelerationX, getHandle().accelerationY, getHandle().accelerationZ);
     }
 
     public void setDirection(Vector direction) {

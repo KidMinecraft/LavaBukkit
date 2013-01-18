@@ -16,8 +16,13 @@ public class Main {
     public static boolean useConsole = true;
 
     public static void main(String[] args) {
+    	
+    	// TODO: command line options
+    	useJline = false;
+    	MinecraftServer.main(args);
+    	
         // Todo: Installation script
-        OptionParser parser = new OptionParser() {
+        /*OptionParser parser = new OptionParser() {
             {
                 acceptsAll(asList("?", "help"), "Show the help");
 
@@ -141,7 +146,7 @@ public class Main {
 
                 if (!useJline) {
                     // This ensures the terminal literal will always match the jline implementation
-                    System.setProperty(jline.TerminalFactory.JLINE_TERMINAL, jline.UnsupportedTerminal.class.getName());
+                    //System.setProperty(jline.TerminalFactory.JLINE_TERMINAL, jline.UnsupportedTerminal.class.getName());
                 }
 
 
@@ -153,7 +158,7 @@ public class Main {
             } catch (Throwable t) {
                 t.printStackTrace();
             }
-        }
+        }*/
     }
 
     private static List<String> asList(String... params) {

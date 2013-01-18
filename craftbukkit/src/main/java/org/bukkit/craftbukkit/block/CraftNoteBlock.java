@@ -1,6 +1,6 @@
 package org.bukkit.craftbukkit.block;
 
-import net.minecraft.server.TileEntityNote;
+import net.minecraft.tileentity.TileEntityNote;
 
 import org.bukkit.Instrument;
 import org.bukkit.Material;
@@ -41,7 +41,7 @@ public class CraftNoteBlock extends CraftBlockState implements NoteBlock {
 
         synchronized (block) {
             if (block.getType() == Material.NOTE_BLOCK) {
-                note.play(world.getHandle(), getX(), getY(), getZ());
+                note.triggerNote(world.getHandle(), getX(), getY(), getZ());
                 return true;
             } else {
                 return false;
@@ -54,7 +54,7 @@ public class CraftNoteBlock extends CraftBlockState implements NoteBlock {
 
         synchronized (block) {
             if (block.getType() == Material.NOTE_BLOCK) {
-                world.getHandle().playNote(getX(), getY(), getZ(), block.getTypeId(), instrument, note);
+                world.getHandle().addBlockEvent(getX(), getY(), getZ(), block.getTypeId(), instrument, note);
                 return true;
             } else {
                 return false;
@@ -67,7 +67,7 @@ public class CraftNoteBlock extends CraftBlockState implements NoteBlock {
 
         synchronized (block) {
             if (block.getType() == Material.NOTE_BLOCK) {
-                world.getHandle().playNote(getX(), getY(), getZ(), block.getTypeId(), instrument.getType(), note.getId());
+                world.getHandle().addBlockEvent(getX(), getY(), getZ(), block.getTypeId(), instrument.getType(), note.getId());
                 return true;
             } else {
                 return false;
