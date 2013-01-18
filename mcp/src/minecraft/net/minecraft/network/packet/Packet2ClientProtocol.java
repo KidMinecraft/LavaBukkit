@@ -10,8 +10,8 @@ public class Packet2ClientProtocol extends Packet
 {
     private int protocolVersion;
     private String username;
-    private String serverHost;
-    private int serverPort;
+    public String serverHost; // CraftBukkit: private -> public
+    public int serverPort; // CraftBukkit: private -> public
 
     public Packet2ClientProtocol() {}
 

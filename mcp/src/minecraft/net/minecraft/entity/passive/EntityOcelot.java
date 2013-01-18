@@ -250,7 +250,8 @@ public class EntityOcelot extends EntityTameable
 
             if (!this.worldObj.isRemote)
             {
-                if (this.rand.nextInt(3) == 0)
+            	// CraftBukkit - added event call and isCancelled check
+                if (this.rand.nextInt(3) == 0 && !org.bukkit.craftbukkit.event.CraftEventFactory.callEntityTameEvent(this, par1EntityPlayer).isCancelled())
                 {
                     this.setTamed(true);
                     this.setTameSkin(1 + this.worldObj.rand.nextInt(3));

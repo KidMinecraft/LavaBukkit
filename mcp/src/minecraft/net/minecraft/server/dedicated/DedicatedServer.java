@@ -11,6 +11,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.logging.Level;
+
+import org.bukkit.event.server.ServerCommandEvent;
+
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.ServerCommand;
 import net.minecraft.crash.CrashReport;
@@ -27,6 +30,7 @@ import net.minecraft.util.MathHelper;
 import net.minecraft.world.EnumGameType;
 import net.minecraft.world.WorldSettings;
 import net.minecraft.world.WorldType;
+import net.minecraft.world.chunk.storage.AnvilSaveConverter;
 
 public class DedicatedServer extends MinecraftServer implements IServer
 {
@@ -135,6 +139,7 @@ public class DedicatedServer extends MinecraftServer implements IServer
         FMLCommonHandler.instance().onServerStarted();
 
         this.setConfigurationManager(new DedicatedPlayerList(this));
+        this.anvilConverterForAnvilFile = new AnvilSaveConverter(server.getWorldContainer()); // CraftBukkit - moved from MinecraftServer constructor
         long var4 = System.nanoTime();
 
         if (this.getFolderName() == null)
@@ -193,6 +198,7 @@ public class DedicatedServer extends MinecraftServer implements IServer
             logger.info("Starting remote control listener");
             this.theRConThreadMain = new RConThreadMain(this);
             this.theRConThreadMain.startThread();
+            this.remoteConsole = new org.bukkit.craftbukkit.command.CraftRemoteConsoleCommandSender(); // CraftBukkit
         }
 
         FMLCommonHandler.instance().handleServerStarting(this);
@@ -306,7 +312,16 @@ public class DedicatedServer extends MinecraftServer implements IServer
         while (!this.pendingCommandList.isEmpty())
         {
             ServerCommand var1 = (ServerCommand)this.pendingCommandList.remove(0);
-            this.getCommandManager().executeCommand(var1.sender, var1.command);
+            
+            // CraftBukkit start - ServerCommand for preprocessing
+            ServerCommandEvent event = new ServerCommandEvent(this.console, var1.command);
+            this.server.getPluginManager().callEvent(event);
+            var1 = new ServerCommand(event.getCommand(), var1.sender);
+
+            // this.getCommandManager().executeCommand(var1.sender, var1.command); // Called in dispatchServerCommand
+            this.server.dispatchServerCommand(this.console, var1);
+            // CraftBukkit end
+            
         }
     }
 

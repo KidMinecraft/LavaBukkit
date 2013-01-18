@@ -44,7 +44,15 @@ public class Packet20NamedEntitySpawn extends Packet
     public Packet20NamedEntitySpawn(EntityPlayer par1EntityPlayer)
     {
         this.entityId = par1EntityPlayer.entityId;
-        this.name = par1EntityPlayer.username;
+        
+        // CraftBukkit start - limit name length to 16 characters
+        if (par1EntityPlayer.username.length() > 16) {
+            this.name = par1EntityPlayer.username.substring(0, 16);
+        } else {
+            this.name = par1EntityPlayer.username;
+        }
+        // CraftBukkit end
+        
         this.xPosition = MathHelper.floor_double(par1EntityPlayer.posX * 32.0D);
         this.yPosition = MathHelper.floor_double(par1EntityPlayer.posY * 32.0D);
         this.zPosition = MathHelper.floor_double(par1EntityPlayer.posZ * 32.0D);

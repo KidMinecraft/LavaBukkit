@@ -3,6 +3,10 @@ package net.minecraft.entity.projectile;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import java.util.List;
+
+import org.bukkit.entity.Player;
+import org.bukkit.event.player.PlayerFishEvent;
+
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityItem;
@@ -475,6 +479,17 @@ public class EntityFishHook extends Entity
 
             if (this.bobber != null)
             {
+            	// CraftBukkit start
+                PlayerFishEvent playerFishEvent = new PlayerFishEvent((Player) this.angler.getBukkitEntity(), this.bobber.getBukkitEntity(), PlayerFishEvent.State.CAUGHT_ENTITY);
+                this.worldObj.getServer().getPluginManager().callEvent(playerFishEvent);
+                
+                if (playerFishEvent.isCancelled()) {
+                    this.setDead();
+                    this.angler.fishEntity = null;
+                    return 0;
+                }
+                // CraftBukkit end
+                
                 double var2 = this.angler.posX - this.posX;
                 double var4 = this.angler.posY - this.posY;
                 double var6 = this.angler.posZ - this.posZ;
@@ -488,6 +503,16 @@ public class EntityFishHook extends Entity
             else if (this.ticksCatchable > 0)
             {
                 EntityItem var13 = new EntityItem(this.worldObj, this.posX, this.posY, this.posZ, new ItemStack(Item.fishRaw));
+                // CraftBukkit start
+                PlayerFishEvent playerFishEvent = new PlayerFishEvent((Player) this.angler.getBukkitEntity(), var13.getBukkitEntity(), PlayerFishEvent.State.CAUGHT_FISH);
+                this.worldObj.getServer().getPluginManager().callEvent(playerFishEvent);
+                playerFishEvent.setExpToDrop(this.rand.nextInt(6) + 1);
+                if (playerFishEvent.isCancelled()) {
+                    this.setDead();
+                    this.angler.fishEntity = null;
+                    return 0;
+                }
+                // CraftBukkit end
                 double var3 = this.angler.posX - this.posX;
                 double var5 = this.angler.posY - this.posY;
                 double var7 = this.angler.posZ - this.posZ;
@@ -498,14 +523,33 @@ public class EntityFishHook extends Entity
                 var13.motionZ = var7 * var11;
                 this.worldObj.spawnEntityInWorld(var13);
                 this.angler.addStat(StatList.fishCaughtStat, 1);
-                this.angler.worldObj.spawnEntityInWorld(new EntityXPOrb(this.angler.worldObj, this.angler.posX, this.angler.posY + 0.5D, this.angler.posZ + 0.5D, this.rand.nextInt(6) + 1));
+                // CraftBukkit - this.random.nextInt(6) + 1 -> playerFishEvent.getExpToDrop()
+                this.angler.worldObj.spawnEntityInWorld(new EntityXPOrb(this.angler.worldObj, this.angler.posX, this.angler.posY + 0.5D, this.angler.posZ + 0.5D, playerFishEvent.getExpToDrop()));
                 var1 = 1;
             }
 
             if (this.inGround)
             {
+            	// CraftBukkit start
+                PlayerFishEvent playerFishEvent = new PlayerFishEvent((Player) this.angler.getBukkitEntity(), null, PlayerFishEvent.State.IN_GROUND);
+                this.worldObj.getServer().getPluginManager().callEvent(playerFishEvent);
+
+                if (playerFishEvent.isCancelled()) {
+                    this.setDead();
+                    this.angler.fishEntity = null;
+                    return 0;
+                }
+                // CraftBukkit end
+                
                 var1 = 2;
             }
+            
+            // CraftBukkit start
+            if (var1 == 0) {
+                PlayerFishEvent playerFishEvent = new PlayerFishEvent((Player) this.angler.getBukkitEntity(), null, PlayerFishEvent.State.FAILED_ATTEMPT);
+                this.worldObj.getServer().getPluginManager().callEvent(playerFishEvent);
+            }
+            // CraftBukkit end
 
             this.setDead();
             this.angler.fishEntity = null;

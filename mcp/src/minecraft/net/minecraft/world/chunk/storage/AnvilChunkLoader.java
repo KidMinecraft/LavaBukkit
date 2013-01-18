@@ -43,12 +43,44 @@ public class AnvilChunkLoader implements IChunkLoader, IThreadedFileIO
     {
         this.chunkSaveLocation = par1File;
     }
+    
+    // CraftBukkit start
+    public boolean chunkExists(World world, int i, int j) {
+        ChunkCoordIntPair chunkcoordintpair = new ChunkCoordIntPair(i, j);
+
+        synchronized (this.syncLockObject) {
+            if (this.pendingAnvilChunksCoordinates.contains(chunkcoordintpair)) {
+                for (int k = 0; k < this.chunksToRemove.size(); ++k) {
+                    if (((AnvilChunkLoaderPending) this.chunksToRemove.get(k)).chunkCoordinate.equals(chunkcoordintpair)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return RegionFileCache.createOrLoadRegionFile(this.chunkSaveLocation, i, j).isChunkSaved(i & 31, j & 31);
+    }
+    // CraftBukkit end
 
     /**
      * Loads the specified(XZ) chunk into the specified world.
      */
+    // CraftBukkit start - add async variant, provide compatibility
     public Chunk loadChunk(World par1World, int par2, int par3) throws IOException
     {
+        Object[] data = this.loadChunkCB(par1World, par2, par3);
+        if (data != null) {
+            Chunk chunk = (Chunk) data[0];
+            NBTTagCompound nbttagcompound = (NBTTagCompound) data[1];
+            this.loadEntities(chunk, nbttagcompound.getCompoundTag("Level"), par1World);
+            return chunk;
+        }
+
+        return null;
+    }
+
+    public Object[] loadChunkCB(World par1World, int par2, int par3) throws IOException {
+        // CraftBukkit end
         NBTTagCompound var4 = null;
         ChunkCoordIntPair var5 = new ChunkCoordIntPair(par2, par3);
         Object var6 = this.syncLockObject;
@@ -86,7 +118,8 @@ public class AnvilChunkLoader implements IChunkLoader, IThreadedFileIO
     /**
      * Wraps readChunkFromNBT. Checks the coordinates and several NBT tags.
      */
-    protected Chunk checkedReadChunkFromNBT(World par1World, int par2, int par3, NBTTagCompound par4NBTTagCompound)
+    // CraftBukkit - return Chunk -> Object[]
+    protected Object[] checkedReadChunkFromNBT(World par1World, int par2, int par3, NBTTagCompound par4NBTTagCompound)
     {
         if (!par4NBTTagCompound.hasKey("Level"))
         {
@@ -111,7 +144,13 @@ public class AnvilChunkLoader implements IChunkLoader, IThreadedFileIO
             }
 
             MinecraftForge.EVENT_BUS.post(new ChunkDataEvent.Load(var5, par4NBTTagCompound));
-            return var5;
+            
+            // CraftBukkit start
+            Object[] data = new Object[2];
+            data[0] = var5;
+            data[1] = par4NBTTagCompound;
+            return data;
+            // CraftBukkit end
         }
     }
 
@@ -192,7 +231,8 @@ public class AnvilChunkLoader implements IChunkLoader, IThreadedFileIO
         return true;
     }
 
-    private void writeChunkNBTTags(AnvilChunkLoaderPending par1AnvilChunkLoaderPending) throws IOException
+    // CraftBukkit: private -> public. CB name: a
+    public void writeChunkNBTTags(AnvilChunkLoaderPending par1AnvilChunkLoaderPending) throws IOException
     {
         DataOutputStream var2 = RegionFileCache.getChunkOutputStream(this.chunkSaveLocation, par1AnvilChunkLoaderPending.chunkCoordinate.chunkXPos, par1AnvilChunkLoaderPending.chunkCoordinate.chunkZPos);
         CompressedStreamTools.write(par1AnvilChunkLoaderPending.nbtTags, var2);
@@ -383,8 +423,15 @@ public class AnvilChunkLoader implements IChunkLoader, IThreadedFileIO
             var13.removeInvalidBlocks();
             var8[var12] = var13;
         }
-
+        
         var5.setStorageArrays(var8);
+
+        // CraftBukkit start - end this method here and split off entity loading to another method
+        return var5;
+    }
+
+    public void loadEntities(Chunk var5, NBTTagCompound par2NBTTagCompound, World par1World) {
+        // CraftBukkit end
 
         if (par2NBTTagCompound.hasKey("Biomes"))
         {
@@ -438,6 +485,6 @@ public class AnvilChunkLoader implements IChunkLoader, IThreadedFileIO
             }
         }
 
-        return var5;
+        //return var5; // CraftBukkit
     }
 }

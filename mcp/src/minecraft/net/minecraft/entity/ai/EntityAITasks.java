@@ -3,16 +3,21 @@ package net.minecraft.entity.ai;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
+import org.bukkit.craftbukkit.util.UnsafeList;
+
 import net.minecraft.profiler.Profiler;
 
 public class EntityAITasks
 {
+    // CraftBukkit start - ArrayList -> UnsafeList
     /** A list of EntityAITaskEntrys in EntityAITasks. */
-    public List taskEntries = new ArrayList();
+    public List taskEntries = new UnsafeList();
 
     /** A list of EntityAITaskEntrys that are currently being executed. */
-    private List executingTaskEntries = new ArrayList();
-
+    private List executingTaskEntries = new UnsafeList();
+    // CraftBukkit end
+    
     /** Instance of Profiler. */
     private final Profiler theProfiler;
     private int field_75778_d = 0;
@@ -52,7 +57,7 @@ public class EntityAITasks
 
     public void onUpdateTasks()
     {
-        ArrayList var1 = new ArrayList();
+        //ArrayList var1 = new ArrayList(); // CraftBukkit - remove usage
         Iterator var2;
         EntityAITaskEntry var3;
 
@@ -78,7 +83,10 @@ public class EntityAITasks
 
                 if (this.func_75775_b(var3) && var3.action.shouldExecute())
                 {
-                    var1.add(var3);
+                    // CraftBukkit start - call method now instead of queueing
+                    //var1.add(var3);
+                	var3.action.startExecuting();
+                	// CraftBukkit end
                     this.executingTaskEntries.add(var3);
                 }
             }
@@ -99,7 +107,8 @@ public class EntityAITasks
             }
         }
 
-        this.theProfiler.startSection("goalStart");
+        // CraftBukkit start - removed usage of arraylist
+        /*this.theProfiler.startSection("goalStart");
         var2 = var1.iterator();
 
         while (var2.hasNext())
@@ -111,6 +120,9 @@ public class EntityAITasks
         }
 
         this.theProfiler.endSection();
+        */
+        // CraftBukkit end
+        
         this.theProfiler.startSection("goalTick");
         var2 = this.executingTaskEntries.iterator();
 
@@ -144,15 +156,19 @@ public class EntityAITasks
             {
                 if (par1EntityAITaskEntry.priority >= var3.priority)
                 {
-                    if (this.executingTaskEntries.contains(var3) && !this.areTasksCompatible(par1EntityAITaskEntry, var3))
+                    // CraftBukkit - switch order
+                    if (!this.areTasksCompatible(par1EntityAITaskEntry, var3) && this.executingTaskEntries.contains(var3))
                     {
                         this.theProfiler.endSection();
+                        ((UnsafeList.Itr) var2).valid = false; // CraftBukkit - mark iterator for reuse
                         return false;
                     }
                 }
-                else if (this.executingTaskEntries.contains(var3) && !var3.action.isContinuous())
+                // CraftBukkit - switch order
+                else if (!var3.action.isContinuous() && this.executingTaskEntries.contains(var3))
                 {
                     this.theProfiler.endSection();
+                    ((UnsafeList.Itr) var2).valid = false; // CraftBukkit - mark iterator for reuse
                     return false;
                 }
             }

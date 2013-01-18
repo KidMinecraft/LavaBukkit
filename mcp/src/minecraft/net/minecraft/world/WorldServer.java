@@ -3,6 +3,8 @@ package net.minecraft.world;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
+import immibis.lavabukkit.world.BukkitWorldRegistry;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -11,6 +13,13 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
+
+import org.bukkit.block.BlockState;
+import org.bukkit.craftbukkit.util.LongHash;
+import org.bukkit.craftbukkit.util.LongHashSet;
+import org.bukkit.event.block.BlockFormEvent;
+import org.bukkit.event.weather.LightningStrikeEvent;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockEventData;
 import net.minecraft.crash.CrashReport;
@@ -53,6 +62,7 @@ import net.minecraft.world.chunk.storage.IChunkLoader;
 import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraft.world.gen.feature.WorldGeneratorBonusChest;
 import net.minecraft.world.storage.ISaveHandler;
+import net.minecraft.world.storage.MapStorage;
 
 import net.minecraftforge.common.ChestGenHooks;
 import static net.minecraftforge.common.ChestGenHooks.*;
@@ -95,12 +105,13 @@ public class WorldServer extends World
     private IntHashMap entityIdMap;
 
     /** Stores the recently processed (lighting) chunks */
-    protected Set<ChunkCoordIntPair> doneChunks = new HashSet<ChunkCoordIntPair>();
+    protected LongHashSet doneChunks = new LongHashSet(); // LavaBukkit - Set/HashSet<ChunkCoordIntPair> -> LongHashSet
     public List<Teleporter> customTeleporters = new ArrayList<Teleporter>();
 
     public WorldServer(MinecraftServer par1MinecraftServer, ISaveHandler par2ISaveHandler, String par3Str, int par4, WorldSettings par5WorldSettings, Profiler par6Profiler)
     {
         super(par2ISaveHandler, par3Str, par5WorldSettings, WorldProvider.getProviderForDimension(par4), par6Profiler);
+        this.pvpMode = par1MinecraftServer.isPVPEnabled(); // CraftBukkit
         this.mcServer = par1MinecraftServer;
         this.theEntityTracker = new EntityTracker(this);
         this.thePlayerManager = new PlayerManager(this, par1MinecraftServer.getConfigurationManager().getViewDistance());
@@ -122,6 +133,8 @@ public class WorldServer extends World
 
         this.field_85177_Q = new Teleporter(this);
         DimensionManager.setWorld(par4, this);
+        
+        if(!(this instanceof WorldServerMulti)) BukkitWorldRegistry.initWorldServer(this); // LavaBukkit
     }
 
     /**
@@ -157,9 +170,15 @@ public class WorldServer extends World
 
         this.theProfiler.startSection("mobSpawner");
 
-        if (this.getGameRules().getGameRuleBooleanValue("doMobSpawning"))
+        // CraftBukkit start - Only call spawner if we have players online and the world allows for mobs or animals
+        long time = this.worldInfo.getWorldTotalTime();
+        if (this.getGameRules().getGameRuleBooleanValue("doMobSpawning") && (this.spawnHostileMobs || this.spawnPeacefulMobs) && this.playerEntities.size() > 0)
         {
-            SpawnerAnimals.findChunksForSpawning(this, this.spawnHostileMobs, this.spawnPeacefulMobs, this.worldInfo.getWorldTotalTime() % 400L == 0L);
+            SpawnerAnimals.findChunksForSpawning(this,
+            	this.spawnHostileMobs && this.ticksPerMonsterSpawns != 0 && time % this.ticksPerMonsterSpawns == 0L,
+            	this.spawnPeacefulMobs && this.ticksPerAnimalSpawns != 0 && time % this.ticksPerAnimalSpawns == 0L,
+            	true); //this.worldInfo.getWorldTotalTime() % 400L == 0L); // LavaBukkit - respect animal spawn interval
+            // CraftBukkit end
         }
 
         this.theProfiler.endStartSection("chunkSource");
@@ -191,6 +210,8 @@ public class WorldServer extends World
         }
         this.theProfiler.endSection();
         this.sendAndApplyBlockEvents();
+        
+        this.getWorld().processChunkGC(); // CraftBukkit
     }
 
     /**
@@ -214,7 +235,7 @@ public class WorldServer extends World
         {
             EntityPlayer var2 = (EntityPlayer)var1.next();
 
-            if (!var2.isPlayerSleeping())
+            if (!var2.isPlayerSleeping() && !var2.fauxSleeping) // CraftBukkit
             {
                 this.allPlayersSleeping = false;
                 break;
@@ -251,17 +272,26 @@ public class WorldServer extends World
         {
             Iterator var1 = this.playerEntities.iterator();
             EntityPlayer var2;
+            
+            // CraftBukkit - This allows us to assume that some people are in bed but not really, allowing time to pass in spite of AFKers
+            boolean foundActualSleepers = false;
 
             do
             {
                 if (!var1.hasNext())
                 {
-                    return true;
+                    return foundActualSleepers; // CraftBukkit
                 }
 
                 var2 = (EntityPlayer)var1.next();
+                
+                // CraftBukkit start
+                if (var2.isPlayerFullyAsleep()) {
+                    foundActualSleepers = true;
+                }
             }
-            while (var2.isPlayerFullyAsleep());
+            while (var2.isPlayerFullyAsleep() || var2.fauxSleeping);
+            // CraftBukkit end
 
             return false;
         }
@@ -312,7 +342,7 @@ public class WorldServer extends World
         super.tickBlocksAndAmbiance();
         int var1 = 0;
         int var2 = 0;
-        Iterator var3 = this.activeChunkSet.iterator();
+        //Iterator var3 = this.activeChunkSet.iterator(); // CraftBukkit
 
         doneChunks.retainAll(activeChunkSet);
         if (doneChunks.size() == activeChunkSet.size())
@@ -322,13 +352,15 @@ public class WorldServer extends World
 
         final long startTime = System.nanoTime();
 
-        while (var3.hasNext())
+        // CraftBukkit start
+        for(long var4 : activeChunkSet.popAll())
         {
-            ChunkCoordIntPair var4 = (ChunkCoordIntPair)var3.next();
-            int var5 = var4.chunkXPos * 16;
-            int var6 = var4.chunkZPos * 16;
+            int chunkX = LongHash.msw(var4), var5 = chunkX * 16;
+            int chunkZ = LongHash.lsw(var4), var6 = chunkZ * 16;
+            
             this.theProfiler.startSection("getChunk");
-            Chunk var7 = this.getChunkFromChunkCoords(var4.chunkXPos, var4.chunkZPos);
+            Chunk var7 = this.getChunkFromChunkCoords(chunkX, chunkZ);
+            // CraftBukkit end
             this.moodSoundAndLightCheck(var5, var6, var7);
             this.theProfiler.endStartSection("tickChunk");
             //Limits and evenly distributes the lighting update time
@@ -369,12 +401,30 @@ public class WorldServer extends World
 
                 if (this.isBlockFreezableNaturally(var9 + var5, var11 - 1, var10 + var6))
                 {
-                    this.setBlockWithNotify(var9 + var5, var11 - 1, var10 + var6, Block.ice.blockID);
+                	// CraftBukkit start
+                    BlockState blockState = this.getWorld().getBlockAt(var9 + var5, var11 - 1, var10 + var6).getState();
+                    blockState.setTypeId(Block.ice.blockID);
+
+                    BlockFormEvent iceBlockForm = new BlockFormEvent(blockState.getBlock(), blockState);
+                    this.getServer().getPluginManager().callEvent(iceBlockForm);
+                    if (!iceBlockForm.isCancelled()) {
+                        blockState.update(true);
+                    }
+                    // CraftBukkit end
                 }
 
                 if (this.isRaining() && this.canSnowAt(var9 + var5, var11, var10 + var6))
                 {
-                    this.setBlockWithNotify(var9 + var5, var11, var10 + var6, Block.snow.blockID);
+                	// CraftBukkit start
+                    BlockState blockState = this.getWorld().getBlockAt(var9 + var5, var11, var10 + var6).getState();
+                    blockState.setTypeId(Block.snow.blockID);
+
+                    BlockFormEvent snow = new BlockFormEvent(blockState.getBlock(), blockState);
+                    this.getServer().getPluginManager().callEvent(snow);
+                    if (!snow.isCancelled()) {
+                        blockState.update(true);
+                    }
+                    // CraftBukkit end
                 }
 
                 if (this.isRaining())
@@ -499,9 +549,10 @@ public class WorldServer extends World
     /**
      * Updates (and cleans up) entities and tile entities
      */
-    public void updateEntities()
+    // CraftBukkit start - this prevents entity cleanup, other issues on servers with no players
+    /*public void updateEntities()
     {
-        if (this.playerEntities.isEmpty() && getPersistentChunks().isEmpty())
+    	if (this.playerEntities.isEmpty() && getPersistentChunks().isEmpty())
         {
             if (this.updateEntityTick++ >= 1200)
             {
@@ -515,6 +566,8 @@ public class WorldServer extends World
 
         super.updateEntities();
     }
+    */
+    // CraftBukkit end
 
     /**
      * Resets the updateEntityTick field to 0
@@ -537,9 +590,15 @@ public class WorldServer extends World
         }
         else
         {
-            if (var2 > 1000)
+            if (false && var2 > 1000) // LavaBukkit - disabled
             {
-                var2 = 1000;
+            	// CraftBukkit start - if the server has too much to process over time, try to alleviate that
+                if (var2 > 20 * 1000) {
+                    var2 = var2 / 20;
+                } else {
+                    var2 = 1000;
+                }
+                // CraftBukkit end
             }
 
             for (int var3 = 0; var3 < var2; ++var3)
@@ -632,10 +691,12 @@ public class WorldServer extends World
      */
     public void updateEntityWithOptionalForce(Entity par1Entity, boolean par2)
     {
+        /* CraftBukkit start - We prevent spawning in general, so this butchering is not needed
         if (!this.mcServer.getCanSpawnAnimals() && (par1Entity instanceof EntityAnimal || par1Entity instanceof EntityWaterMob))
         {
             par1Entity.setDead();
         }
+        // CraftBukkit end */
 
         if (!this.mcServer.getCanSpawnNPCs() && par1Entity instanceof INpc)
         {
@@ -931,11 +992,20 @@ public class WorldServer extends World
      */
     public Explosion newExplosion(Entity par1Entity, double par2, double par4, double par6, float par8, boolean par9, boolean par10)
     {
-        Explosion var11 = new Explosion(this, par1Entity, par2, par4, par6, par8);
+        // CraftBukkit start
+        Explosion var11 = super.newExplosion(par1Entity, par2, par4, par6, par8, par9, par10);
+        
+        if (var11.wasCanceled) {
+            return var11;
+        }
+        
+        /* Remove
         var11.isFlaming = par9;
         var11.isSmoking = par10;
         var11.doExplosionA();
         var11.doExplosionB(false);
+        */
+        // CraftBukkit end - TODO: Check if explosions are still properly implemented
 
         if (!par10)
         {
@@ -1041,14 +1111,11 @@ public class WorldServer extends World
 
         if (var1 != this.isRaining())
         {
-            if (var1)
-            {
-                this.mcServer.getConfigurationManager().sendPacketToAllPlayers(new Packet70GameEvent(2, 0));
-            }
-            else
-            {
-                this.mcServer.getConfigurationManager().sendPacketToAllPlayers(new Packet70GameEvent(1, 0));
-            }
+        	// CraftBukkit start - only sending weather packets to those affected
+            for(EntityPlayerMP pl : (Iterable<EntityPlayerMP>)playerEntities)
+                if(pl.worldObj == this)
+                	pl.playerNetServerHandler.sendPacketToPlayer(new Packet70GameEvent(var1 ? 2 : 1, 0));
+            // CraftBukkit end
         }
     }
 

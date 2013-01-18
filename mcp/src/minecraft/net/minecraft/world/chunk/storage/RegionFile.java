@@ -102,6 +102,63 @@ public class RegionFile
             var6.printStackTrace();
         }
     }
+    
+    // CraftBukkit start - this is a copy (sort of) of the method below it, make sure they stay in sync
+    public synchronized boolean chunkExists(int par1, int par2) {
+        if (this.outOfBounds(par1, par2))
+        {
+            return false;
+        }
+        else
+        {
+            try
+            {
+                int var3 = this.getOffset(par1, par2);
+
+                if (var3 == 0)
+                {
+                    return false;
+                }
+                else
+                {
+                    int var4 = var3 >> 8;
+                    int var5 = var3 & 255;
+
+                    if (var4 + var5 > this.sectorFree.size())
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        this.dataFile.seek((long)(var4 * 4096));
+                        int var6 = this.dataFile.readInt();
+
+                        if (var6 > 4096 * var5)
+                        {
+                            return false;
+                        }
+                        else if (var6 <= 0)
+                        {
+                            return false;
+                        }
+                        else
+                        {
+                            byte var7 = this.dataFile.readByte();
+
+                            if(var7 == 0 || var7 == 1)
+                            	return true;
+                        }
+                    }
+                }
+            }
+            catch (IOException var9)
+            {
+                return false;
+            }
+        }
+        return false;
+    }
+    // CraftBukkit end
 
     /**
      * args: x, y - get uncompressed chunk stream from the region file

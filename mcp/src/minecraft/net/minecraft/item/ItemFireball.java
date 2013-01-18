@@ -1,5 +1,8 @@
 package net.minecraft.item;
 
+import org.bukkit.entity.Player;
+import org.bukkit.event.block.BlockIgniteEvent;
+
 import net.minecraft.block.Block;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.player.EntityPlayer;
@@ -65,6 +68,24 @@ public class ItemFireball extends Item
 
                 if (var11 == 0)
                 {
+                	// CraftBukkit start
+                	if(!par3World.isRemote) {
+	                    org.bukkit.block.Block blockClicked = par3World.getWorld().getBlockAt(par4, par5, par6);
+	                    Player thePlayer = (Player) par2EntityPlayer.getBukkitEntity();
+	
+	                    BlockIgniteEvent eventIgnite = new BlockIgniteEvent(blockClicked, BlockIgniteEvent.IgniteCause.FIREBALL, thePlayer);
+	                    par3World.getServer().getPluginManager().callEvent(eventIgnite);
+	
+	                    if (eventIgnite.isCancelled()) {
+	                        if (!par2EntityPlayer.capabilities.isCreativeMode) {
+	                            --par1ItemStack.stackSize;
+	                        }
+	                        return false;
+	                    }
+                	}
+                    // CraftBukkit end
+
+                    
                     par3World.playSoundEffect((double)par4 + 0.5D, (double)par5 + 0.5D, (double)par6 + 0.5D, "fire.ignite", 1.0F, itemRand.nextFloat() * 0.4F + 0.8F);
                     par3World.setBlockWithNotify(par4, par5, par6, Block.fire.blockID);
                 }

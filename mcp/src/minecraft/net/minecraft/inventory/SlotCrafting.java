@@ -14,7 +14,7 @@ import net.minecraftforge.event.entity.player.PlayerDestroyItemEvent;
 public class SlotCrafting extends Slot
 {
     /** The craft matrix inventory linked to this result slot. */
-    private final IInventory craftMatrix;
+    public final IInventory craftMatrix; // CraftBukkit - private -> public
 
     /** The player that is using the GUI where this slot resides. */
     private EntityPlayer thePlayer;

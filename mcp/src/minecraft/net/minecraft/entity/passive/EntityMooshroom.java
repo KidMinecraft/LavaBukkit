@@ -10,6 +10,8 @@ import net.minecraft.world.World;
 
 import java.util.ArrayList;
 
+import org.bukkit.event.player.PlayerShearEntityEvent;
+
 import net.minecraftforge.common.IShearable;
 
 public class EntityMooshroom extends EntityCow implements IShearable

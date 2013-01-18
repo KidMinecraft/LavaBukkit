@@ -707,7 +707,8 @@ public class Block
 
             for (ItemStack item : items)
             {
-                if (par1World.rand.nextFloat() <= par6)
+            	// CraftBukkit - <= to < to allow for plugins to completely disable block drops from explosions
+                if (par1World.rand.nextFloat() < par6)
                 {
                     this.dropBlockAsItem_do(par1World, par2, par3, par4, item);
                 }
@@ -735,7 +736,8 @@ public class Block
     /**
      * called by spawner, ore, redstoneOre blocks
      */
-    protected void dropXpOnBlockBreak(World par1World, int par2, int par3, int par4, int par5)
+    // CraftBukkit: protected -> public
+    public void dropXpOnBlockBreak(World par1World, int par2, int par3, int par4, int par5)
     {
         if (!par1World.isRemote)
         {
@@ -2216,4 +2218,10 @@ public class Block
     {
         return (blockID == blockEmerald.blockID || blockID == blockGold.blockID || blockID == blockDiamond.blockID || blockID == blockSteel.blockID);
     }
+    
+    // CraftBukkit start
+    public int getExpDrop(World world, int data, int enchantmentLevel) {
+        return 0;
+    }
+    // CraftBukkit end
 }

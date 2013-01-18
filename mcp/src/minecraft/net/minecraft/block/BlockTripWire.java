@@ -8,11 +8,13 @@ import java.util.Random;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.Item;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.Direction;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
+import net.minecraftforge.event.entity.player.EntityInteractEvent;
 
 public class BlockTripWire extends Block
 {
@@ -253,6 +255,34 @@ public class BlockTripWire extends Block
                 }
             }
         }
+        
+        // CraftBukkit start
+        org.bukkit.World bworld = par1World.isRemote ? null : par1World.getWorld();
+        org.bukkit.plugin.PluginManager manager = par1World.isRemote ? null : par1World.getServer().getPluginManager();
+
+        if (var6 != var7 && !par1World.isRemote) {
+            if (var7) {
+                for (Object object : var8) {
+                    if (object != null) {
+                        org.bukkit.event.Cancellable cancellable;
+
+                        if (object instanceof EntityPlayerMP) {
+                            cancellable = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerInteractEvent((EntityPlayerMP) object, org.bukkit.event.block.Action.PHYSICAL, par2, par3, par4, -1, null);
+                        } else if (object instanceof Entity) {
+                            cancellable = new org.bukkit.event.entity.EntityInteractEvent(((Entity) object).getBukkitEntity(), bworld.getBlockAt(par2, par3, par4));
+                            manager.callEvent((org.bukkit.event.entity.EntityInteractEvent) cancellable);
+                        } else {
+                            continue;
+                        }
+
+                        if (cancellable.isCancelled()) {
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+        // CraftBukkit end
 
         if (var7 && !var6)
         {

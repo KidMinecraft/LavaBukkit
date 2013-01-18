@@ -24,6 +24,8 @@ public class PlayerInstance
     private int field_73260_f;
 
     final PlayerManager myManager;
+    
+    private boolean loaded = false; // CraftBukkit
 
     public PlayerInstance(PlayerManager par1PlayerManager, int par2, int par3)
     {
@@ -32,13 +34,19 @@ public class PlayerInstance
         this.locationOfBlockChange = new short[64];
         this.numberOfTilesToUpdate = 0;
         this.chunkLocation = new ChunkCoordIntPair(par2, par3);
-        par1PlayerManager.getWorldServer().theChunkProviderServer.loadChunk(par2, par3);
+        // CraftBukkit start
+        par1PlayerManager.getWorldServer().theChunkProviderServer.loadChunk(par2, par3, new Runnable() {
+            public void run() {
+                PlayerInstance.this.loaded = true;
+            }
+        });
+        // CraftBukkit end
     }
 
     /**
      * called for all chunks within the visible radius of the player
      */
-    public void addPlayerToChunkWatchingList(EntityPlayerMP par1EntityPlayerMP)
+    public void addPlayerToChunkWatchingList(final EntityPlayerMP par1EntityPlayerMP) // CraftBukkit - added final to argument
     {
         if (this.playersInChunk.contains(par1EntityPlayerMP))
         {
@@ -47,7 +55,20 @@ public class PlayerInstance
         else
         {
             this.playersInChunk.add(par1EntityPlayerMP);
-            par1EntityPlayerMP.loadedChunks.add(this.chunkLocation);
+            
+            // CraftBukkit start
+            if (this.loaded) {
+                par1EntityPlayerMP.loadedChunks.add(this.chunkLocation);
+            } else {
+                // Abuse loadChunk to add another callback
+                myManager.getWorldServer().theChunkProviderServer.loadChunk(this.chunkLocation.chunkXPos, this.chunkLocation.chunkZPos, new Runnable() {
+                    public void run() {
+                        par1EntityPlayerMP.loadedChunks.add(PlayerInstance.this.chunkLocation);
+                    }
+                });
+            }
+            // CraftBukkit end
+            
         }
     }
 
@@ -142,7 +163,7 @@ public class PlayerInstance
                 {
                     var1 = this.chunkLocation.chunkXPos * 16;
                     var2 = this.chunkLocation.chunkZPos * 16;
-                    this.sendToAllPlayersWatchingChunk(new Packet51MapChunk(PlayerManager.getWorldServer(this.myManager).getChunkFromChunkCoords(this.chunkLocation.chunkXPos, this.chunkLocation.chunkZPos), false, this.field_73260_f));
+                    this.sendToAllPlayersWatchingChunk(new Packet51MapChunk(PlayerManager.getWorldServer(this.myManager).getChunkFromChunkCoords(this.chunkLocation.chunkXPos, this.chunkLocation.chunkZPos), field_73260_f == 0xFFFF, this.field_73260_f)); // CraftBukkit - send everything (including biome) if all sections flagged (field_73260_f == 0xFFFF, was false)
 
                     for (var3 = 0; var3 < 16; ++var3)
                     {

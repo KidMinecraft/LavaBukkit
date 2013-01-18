@@ -1,11 +1,15 @@
 package net.minecraft.world.gen.feature;
 
+import immibis.lavabukkit.nms.MCPBlockChangeDelegate;
+import immibis.lavabukkit.nms.NMSUtils;
+
 import java.util.Random;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockSapling.TreeGenerator;
 import net.minecraft.util.Direction;
 import net.minecraft.world.World;
 
-public class WorldGenTrees extends WorldGenerator
+public class WorldGenTrees extends WorldGenerator implements TreeGenerator // CraftBukkit add interface
 {
     /** The minimum height of a generated tree. */
     private final int minTreeHeight;
@@ -33,7 +37,8 @@ public class WorldGenTrees extends WorldGenerator
         this.vinesGrow = par5;
     }
 
-    public boolean generate(World par1World, Random par2Random, int par3, int par4, int par5)
+    // CraftBukkit change signature
+    public boolean generate(MCPBlockChangeDelegate par1World, Random par2Random, int par3, int par4, int par5)
     {
         int var6 = par2Random.nextInt(3) + this.minTreeHeight;
         boolean var7 = true;
@@ -70,10 +75,12 @@ public class WorldGenTrees extends WorldGenerator
                             Block block = Block.blocksList[var12];
 
                             if (var12 != 0 &&
-                               !block.isLeaves(par1World, var10, var8, var11) &&
+                            	// LavaBukkit fix MCPBCD call
+                               !par1World.isLeaves(block, var10, var8, var11) &&
                                 var12 != Block.grass.blockID &&
                                 var12 != Block.dirt.blockID &&
-                               !block.isWood(par1World, var10, var8, var11))
+                                // LavaBukkit fix MCPBCD call
+                               !par1World.isWood(block, var10, var8, var11))
                             {
                                 var7 = false;
                             }
@@ -119,7 +126,8 @@ public class WorldGenTrees extends WorldGenerator
                                 Block block = Block.blocksList[par1World.getBlockId(var14, var11, var16)];
 
                                 if ((Math.abs(var15) != var13 || Math.abs(var17) != var13 || par2Random.nextInt(2) != 0 && var12 != 0) &&
-                                    (block == null || block.canBeReplacedByLeaves(par1World, var14, var11, var16)))
+                                	// LavaBukkit fix MCPBCD call
+                                    (block == null || par1World.canBeReplacedByLeaves(block, var14, var11, var16)))
                                 {
                                     this.setBlockAndMetadata(par1World, var14, var11, var16, Block.leaves.blockID, this.metaLeaves);
                                 }
@@ -133,7 +141,8 @@ public class WorldGenTrees extends WorldGenerator
 
                         Block block = Block.blocksList[var12];
 
-                        if (var12 == 0 || block == null || block.isLeaves(par1World, par3, par4 + var11, par5))
+                        // LavaBukkit fix MCPBCD call
+                        if (var12 == 0 || block == null || par1World.isLeaves(block, par3, par4 + var11, par5))
                         {
                             this.setBlockAndMetadata(par1World, par3, par4 + var11, par5, Block.wood.blockID, this.metaWood);
 
@@ -174,7 +183,8 @@ public class WorldGenTrees extends WorldGenerator
                                 for (var15 = par5 - var13; var15 <= par5 + var13; ++var15)
                                 {
                                     Block block = Block.blocksList[par1World.getBlockId(var14, var11, var15)];
-                                    if (block != null && block.isLeaves(par1World, var14, var11, var15))
+                                    // LavaBukkit fix MCPBCD call
+                                    if (block != null && par1World.isLeaves(block, var14, var11, var15))
                                     {
                                         if (par2Random.nextInt(4) == 0 && par1World.getBlockId(var14 - 1, var11, var15) == 0)
                                         {
@@ -233,7 +243,8 @@ public class WorldGenTrees extends WorldGenerator
     /**
      * Grows vines downward from the given block for a given length. Args: World, x, starty, z, vine-length
      */
-    private void growVines(World par1World, int par2, int par3, int par4, int par5)
+    // CraftBukkit change signature
+    private void growVines(MCPBlockChangeDelegate par1World, int par2, int par3, int par4, int par5)
     {
         this.setBlockAndMetadata(par1World, par2, par3, par4, Block.vine.blockID, par5);
         int var6 = 4;
@@ -251,4 +262,7 @@ public class WorldGenTrees extends WorldGenerator
             --var6;
         }
     }
+    
+    // CraftBukkit
+	@Override public boolean generate(World var1, Random var2, int var3, int var4, int var5) {return generate(NMSUtils.createBCD(var1),var2,var3,var4,var5);}
 }

@@ -1,5 +1,7 @@
 package net.minecraft.entity.monster;
 
+import org.bukkit.event.entity.EntityTargetEvent;
+
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.EnchantmentThorns;
 import net.minecraft.entity.Entity;
@@ -77,6 +79,21 @@ public abstract class EntityMob extends EntityCreature implements IMob
             {
                 if (var3 != this)
                 {
+                	// CraftBukkit start - we still need to call events for entities without goals
+                    if (!worldObj.isRemote && var3 != this.entityToAttack && (this instanceof EntityBlaze || this instanceof EntityEnderman || this instanceof EntitySpider || this instanceof EntityGiantZombie || this instanceof EntitySilverfish)) {
+                        EntityTargetEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityTargetEvent(this, var3, EntityTargetEvent.TargetReason.TARGET_ATTACKED_ENTITY);
+
+                        if (!event.isCancelled()) {
+                            if (event.getTarget() == null) {
+                                this.entityToAttack = null;
+                            } else {
+                                this.entityToAttack = ((org.bukkit.craftbukkit.entity.CraftEntity) event.getTarget()).getHandle();
+                            }
+                        }
+                    } else {
+                        this.entityToAttack = var3;
+                    }
+                    // CraftBukkit end
                     this.entityToAttack = var3;
                 }
 

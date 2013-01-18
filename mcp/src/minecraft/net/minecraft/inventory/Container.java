@@ -1,14 +1,20 @@
 package net.minecraft.inventory;
 
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import immibis.lavabukkit.BukkitInventoryHelper;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.ItemStack;
+
+import org.bukkit.inventory.InventoryView;
+
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
 public abstract class Container
 {
@@ -19,11 +25,13 @@ public abstract class Container
     public List inventorySlots = new ArrayList();
     public int windowId = 0;
     private short transactionID = 0;
+    
+    public boolean checkReachable = true; // CraftBukkit
 
     /**
      * list of all people that need to be notified when this craftinventory changes
      */
-    protected List crafters = new ArrayList();
+    public List crafters = new ArrayList(); // CraftBukkit - protected -> public
     private Set playerList = new HashSet();
 
     /**
@@ -159,10 +167,13 @@ public abstract class Container
 
                     if (par2 == 1)
                     {
-                        par4EntityPlayer.dropPlayerItem(var6.getItemStack().splitStack(1));
+                        // CraftBukkit start - store a reference
+                        ItemStack itemstack3 = var6.getItemStack();
+                        par4EntityPlayer.dropPlayerItem(itemstack3.splitStack(1));
 
-                        if (var6.getItemStack().stackSize == 0)
+                        if (itemstack3.stackSize == 0)
                         {
+                        	// CraftBukkit end
                             var6.setItemStack((ItemStack)null);
                         }
                     }
@@ -218,6 +229,7 @@ public abstract class Container
                                 var10 = var7.getSlotStackLimit();
                             }
 
+                            if(var13.stackSize >= var10) // CraftBukkit
                             var7.putStack(var13.splitStack(var10));
 
                             if (var13.stackSize == 0)
@@ -440,7 +452,7 @@ public abstract class Container
         }
     }
 
-    public abstract boolean canInteractWith(EntityPlayer var1);
+	public abstract boolean canInteractWith(EntityPlayer var1);
 
     /**
      * merges provided ItemStack with the first avaliable one in the container/player inventory
@@ -534,4 +546,10 @@ public abstract class Container
 
         return var5;
     }
+
+    // CraftBukkit start
+	public InventoryView getBukkitView() {
+		return BukkitInventoryHelper.getBukkitView(this);
+	}
+	// CraftBukkit end
 }

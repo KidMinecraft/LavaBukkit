@@ -5,6 +5,15 @@ import cpw.mods.fml.relauncher.SideOnly;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import org.bukkit.Location;
+import org.bukkit.entity.Vehicle;
+import org.bukkit.event.vehicle.VehicleCreateEvent;
+import org.bukkit.event.vehicle.VehicleDamageEvent;
+import org.bukkit.event.vehicle.VehicleDestroyEvent;
+import org.bukkit.event.vehicle.VehicleEntityCollisionEvent;
+import org.bukkit.util.Vector;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockRail;
 import net.minecraft.entity.Entity;
@@ -79,11 +88,24 @@ public class EntityMinecart extends Entity implements IInventory
     protected float maxSpeedAirLateral;
     protected float maxSpeedAirVertical;
     protected double dragAir;
+    
+    // CraftBukkit start
+    public boolean slowWhenEmpty = true;
+    private double derailedX = 0.5;
+    private double derailedY = 0.5;
+    private double derailedZ = 0.5;
+    // LavaBukkit start - 0.95 -> defaultDragAir
+    private double flyingX = defaultDragAir;
+    private double flyingY = defaultDragAir;
+    private double flyingZ = defaultDragAir;
+    // LavaBukkit end
+    public double maxSpeed = 0.4D;
+    // CraftBukkit end
 
     public EntityMinecart(World par1World)
     {
         super(par1World);
-        this.cargoItems = new ItemStack[36];
+        this.cargoItems = new ItemStack[27]; // CraftBukkit - 36 -> 27
         this.fuel = 0;
         this.field_70499_f = false;
         this.field_82345_h = true;
@@ -97,6 +119,9 @@ public class EntityMinecart extends Entity implements IInventory
         maxSpeedAirLateral = defaultMaxSpeedAirLateral;
         maxSpeedAirVertical = defaultMaxSpeedAirVertical;
         dragAir = defaultDragAir;
+
+        if(!worldObj.isRemote) // CraftBukkit
+        	worldObj.getServer().getPluginManager().callEvent(new VehicleCreateEvent((Vehicle) this.getBukkitEntity())); // CraftBukkit
     }
 
     public EntityMinecart(World world, int type)
@@ -189,6 +214,20 @@ public class EntityMinecart extends Entity implements IInventory
             }
             else
             {
+                // CraftBukkit start
+                Vehicle vehicle = (Vehicle) this.getBukkitEntity();
+                org.bukkit.entity.Entity attacker = (par1DamageSource.getEntity() == null) ? null : par1DamageSource.getEntity().getBukkitEntity();
+
+                VehicleDamageEvent event = new VehicleDamageEvent(vehicle, attacker, par2);
+                worldObj.getServer().getPluginManager().callEvent(event);
+
+                if (event.isCancelled()) {
+                    return true;
+                }
+
+                par2 = event.getDamage();
+                // CraftBukkit end
+                
                 this.func_70494_i(-this.func_70493_k());
                 this.func_70497_h(10);
                 this.setBeenAttacked();
@@ -201,6 +240,16 @@ public class EntityMinecart extends Entity implements IInventory
 
                 if (this.getDamage() > 40)
                 {
+                	// CraftBukkit start
+                    VehicleDestroyEvent destroyEvent = new VehicleDestroyEvent(vehicle, attacker);
+                    worldObj.getServer().getPluginManager().callEvent(destroyEvent);
+
+                    if (destroyEvent.isCancelled()) {
+                        this.setDamage(40); // Maximize damage so this doesn't get triggered again right away
+                        return true;
+                    }
+                    // CraftBukkit end
+                    
                     if (this.riddenByEntity != null)
                     {
                         this.riddenByEntity.mountEntity(this);
@@ -305,6 +354,14 @@ public class EntityMinecart extends Entity implements IInventory
      */
     public void onUpdate()
     {
+    	// CraftBukkit start
+        double prevX = this.posX;
+        double prevY = this.posY;
+        double prevZ = this.posZ;
+        float prevYaw = this.rotationYaw;
+        float prevPitch = this.rotationPitch;
+        // CraftBukkit end
+        
         if (this.field_82344_g != null)
         {
             this.field_82344_g.update();
@@ -419,7 +476,7 @@ public class EntityMinecart extends Entity implements IInventory
                 --var2;
             }
 
-            double var4 = 0.4D;
+            double var4 = maxSpeed; // CraftBukkit; 0.4 -> maxSpeed
             double var6 = 0.0078125D;
             int var8 = this.worldObj.getBlockId(var45, var2, var47);
 
@@ -641,6 +698,21 @@ public class EntityMinecart extends Entity implements IInventory
             }
 
             this.setRotation(this.rotationYaw, this.rotationPitch);
+            
+            // CraftBukkit start
+            if(!worldObj.isRemote) {
+	            org.bukkit.World bworld = this.worldObj.getWorld();
+	            Location from = new Location(bworld, prevX, prevY, prevZ, prevYaw, prevPitch);
+	            Location to = new Location(bworld, this.posX, this.posY, this.posZ, this.rotationYaw, this.rotationPitch);
+	            Vehicle vehicle = (Vehicle) this.getBukkitEntity();
+	
+	            worldObj.getServer().getPluginManager().callEvent(new org.bukkit.event.vehicle.VehicleUpdateEvent(vehicle));
+	
+	            if (!from.equals(to)) {
+	                worldObj.getServer().getPluginManager().callEvent(new org.bukkit.event.vehicle.VehicleMoveEvent(vehicle, from, to));
+	            }
+            }
+            // CraftBukkit end
 
             AxisAlignedBB box = null;
             if (getCollisionHandler() != null)
@@ -890,6 +962,21 @@ public class EntityMinecart extends Entity implements IInventory
      */
     public void applyEntityCollision(Entity par1Entity)
     {
+    	// CraftBukkit start
+    	VehicleEntityCollisionEvent collisionEvent = null;
+    	if(!worldObj.isRemote) {
+	        Vehicle vehicle = (Vehicle) this.getBukkitEntity();
+	        org.bukkit.entity.Entity hitEntity = (par1Entity == null) ? null : par1Entity.getBukkitEntity();
+	
+	        collisionEvent = new VehicleEntityCollisionEvent(vehicle, hitEntity);
+	        worldObj.getServer().getPluginManager().callEvent(collisionEvent);
+	
+	        if (collisionEvent.isCancelled()) {
+	            return;
+	        }
+    	}
+        // CraftBukkit end
+        
         MinecraftForge.EVENT_BUS.post(new MinecartCollisionEvent(this, par1Entity));
         if (getCollisionHandler() != null)
         {
@@ -909,7 +996,7 @@ public class EntityMinecart extends Entity implements IInventory
                 double var4 = par1Entity.posZ - this.posZ;
                 double var6 = var2 * var2 + var4 * var4;
 
-                if (var6 >= 9.999999747378752E-5D)
+                if (var6 >= 9.999999747378752E-5D && (collisionEvent == null || !collisionEvent.isCollisionCancelled())) // CraftBukkit
                 {
                     var6 = (double)MathHelper.sqrt_double(var6);
                     var2 /= var6;
@@ -1384,7 +1471,8 @@ public class EntityMinecart extends Entity implements IInventory
      */
     protected double getDrag()
     {
-        return riddenByEntity != null ? defaultDragRidden : defaultDragEmpty;
+    	// CraftBukkit - added slowWhenEmpty
+        return slowWhenEmpty || riddenByEntity != null ? defaultDragRidden : defaultDragEmpty;
     }
 
     /**
@@ -1501,9 +1589,11 @@ public class EntityMinecart extends Entity implements IInventory
         }
         if(onGround)
         {
-            motionX *= 0.5D;
-            motionY *= 0.5D;
-            motionZ *= 0.5D;
+        	// CraftBukkit start - 0.5 -> derailedX/Y/Z
+            motionX *= derailedX;
+            motionY *= derailedY;
+            motionZ *= derailedZ;
+            // CraftBukkit end
         }
         moveEntity(motionX, moveY, motionZ);
         if(!onGround)
@@ -1610,5 +1700,29 @@ public class EntityMinecart extends Entity implements IInventory
     public void setDragAir(double value)
     {
         dragAir = value;
+        flyingX = flyingY = flyingZ = value; // CraftBukkit
     }
+    
+    // CraftBukkit start - methods for getting and setting flying and derailed velocity modifiers
+    public Vector getFlyingVelocityMod() {
+        return new Vector(flyingX, flyingY, flyingZ);
+    }
+
+    public void setFlyingVelocityMod(Vector flying) {
+        flyingX = flying.getX();
+        flyingY = flying.getY();
+        flyingZ = flying.getZ();
+        dragAir = (flyingX + flyingY + flyingZ) / 3;
+    }
+
+    public Vector getDerailedVelocityMod() {
+        return new Vector(derailedX, derailedY, derailedZ);
+    }
+
+    public void setDerailedVelocityMod(Vector derailed) {
+        derailedX = derailed.getX();
+        derailedY = derailed.getY();
+        derailedZ = derailed.getZ();
+    }
+    // CraftBukkit end
 }

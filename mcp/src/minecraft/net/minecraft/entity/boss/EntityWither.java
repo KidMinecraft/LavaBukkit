@@ -254,7 +254,8 @@ public class EntityWither extends EntityMob implements IBossDisplayData, IRanged
 
             if (var1 <= 0)
             {
-                this.worldObj.newExplosion(this, this.posX, this.posY + (double)this.getEyeHeight(), this.posZ, 7.0F, false, this.worldObj.getGameRules().getGameRuleBooleanValue("mobGriefing"));
+            	this.worldObj.newExplosion(this, this.posX, this.posY + (double)this.getEyeHeight(), this.posZ, 7.0F, false, this.worldObj.getGameRules().getGameRuleBooleanValue("mobGriefing"));
+                
                 this.worldObj.func_82739_e(1013, (int)this.posX, (int)this.posY, (int)this.posZ, 0);
             }
 
@@ -375,6 +376,12 @@ public class EntityWither extends EntityMob implements IBossDisplayData, IRanged
 
                                 if (var11 > 0 && var11 != Block.bedrock.blockID && var11 != Block.endPortal.blockID && var11 != Block.endPortalFrame.blockID)
                                 {
+                                	// CraftBukkit start
+                                    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(this, var21, var9, var10, 0, 0).isCancelled()) {
+                                        continue;
+                                    }
+                                    // CraftBukkit end
+                                    
                                     int var12 = this.worldObj.getBlockMetadata(var21, var9, var10);
                                     this.worldObj.playAuxSFX(2001, var21, var9, var10, var11 + (var12 << 12));
                                     Block.blocksList[var11].dropBlockAsItem(this.worldObj, var21, var9, var10, var12, 0);

@@ -6,10 +6,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.UUID;
 import java.util.logging.Logger;
+
+import org.bukkit.craftbukkit.entity.CraftPlayer;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.MinecraftException;
@@ -35,6 +39,8 @@ public class SaveHandler implements ISaveHandler, IPlayerFileData
 
     /** The directory name of the world */
     private final String saveDirectoryName;
+    
+    private UUID uuid = null; // CraftBukkit
 
     public SaveHandler(File par1File, String par2Str, boolean par3)
     {
@@ -296,6 +302,13 @@ public class SaveHandler implements ISaveHandler, IPlayerFileData
 
         if (var2 != null)
         {
+        	// CraftBukkit start
+            if (par1EntityPlayer instanceof EntityPlayerMP) {
+                CraftPlayer player = (CraftPlayer) par1EntityPlayer.getBukkitEntity();
+                player.setFirstPlayed(new File(playersDirectory, par1EntityPlayer.username + ".dat").lastModified());
+            }
+            // CraftBukkit end
+        	
             par1EntityPlayer.readFromNBT(var2);
         }
     }
@@ -368,4 +381,34 @@ public class SaveHandler implements ISaveHandler, IPlayerFileData
     {
         return this.saveDirectoryName;
     }
+    
+    // CraftBukkit start
+    public UUID getUUID() {
+        if (uuid != null) return uuid;
+        try {
+            File file1 = new File(this.worldDirectory, "uid.dat");
+            if (!file1.exists()) {
+                DataOutputStream dos = new DataOutputStream(new FileOutputStream(file1));
+                uuid = UUID.randomUUID();
+                dos.writeLong(uuid.getMostSignificantBits());
+                dos.writeLong(uuid.getLeastSignificantBits());
+                dos.close();
+            }
+            else {
+                DataInputStream dis = new DataInputStream(new FileInputStream(file1));
+                uuid = new UUID(dis.readLong(), dis.readLong());
+                dis.close();
+            }
+            return uuid;
+        }
+        catch (IOException ex) {
+            return null;
+        }
+    }
+
+    public File getPlayerDir() {
+        return playersDirectory;
+    }
+
+    // CraftBukkit end
 }

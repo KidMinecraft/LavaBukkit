@@ -3,7 +3,7 @@ package net.minecraft.pathfinding;
 public class Path
 {
     /** Contains the points in this path */
-    private PathPoint[] pathPoints = new PathPoint[1024];
+    private PathPoint[] pathPoints = new PathPoint[128]; // CraftBukkit - reduce default size, was 1024
 
     /** The number of points in this path */
     private int count = 0;

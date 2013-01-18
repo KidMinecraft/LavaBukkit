@@ -3,6 +3,10 @@ package net.minecraft.block;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import java.util.Random;
+
+import org.bukkit.event.entity.EntityPortalEnterEvent;
+import org.bukkit.event.world.PortalCreateEvent;
+
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemMonsterPlacer;
@@ -118,6 +122,11 @@ public class BlockPortal extends BlockBreakable
         }
         else
         {
+        	// CraftBukkit start
+            java.util.Collection<org.bukkit.block.Block> blocks = new java.util.HashSet<org.bukkit.block.Block>();
+            org.bukkit.World bworld = par1World.getWorld();
+            // CraftBukkit end
+            
             if (par1World.getBlockId(par2 - var5, par3, par4 - var6) == 0)
             {
                 par2 -= var5;
@@ -142,7 +151,9 @@ public class BlockPortal extends BlockBreakable
                             if (var10 != Block.obsidian.blockID)
                             {
                                 return false;
-                            }
+	                        } else { // CraftBukkit
+	                            blocks.add(bworld.getBlockAt(par2 + var5 * var7, par3 + var8, par4 + var6 * var7)); // CraftBukkit
+	                        }
                         }
                         else if (var10 != 0 && var10 != Block.fire.blockID)
                         {
@@ -151,6 +162,21 @@ public class BlockPortal extends BlockBreakable
                     }
                 }
             }
+            
+            // CraftBukkit start
+            for (var7 = 0; var7 < 2; ++var7) {
+                for (var8 = 0; var8 < 3; ++var8) {
+                    blocks.add(bworld.getBlockAt(par2 + var5 * var7, par3 + var8, par4 + var6 * var7));
+                }
+            }
+
+            PortalCreateEvent event = new PortalCreateEvent(blocks, bworld, PortalCreateEvent.CreateReason.FIRE);
+            par1World.getServer().getPluginManager().callEvent(event);
+
+            if (event.isCancelled()) {
+                return false;
+            }
+            // CraftBukkit end
 
             par1World.editingBlocks = true;
 
@@ -265,6 +291,13 @@ public class BlockPortal extends BlockBreakable
     {
         if (par5Entity.ridingEntity == null && par5Entity.riddenByEntity == null)
         {
+            // CraftBukkit start - Entity in portal
+        	if(!par1World.isRemote) {
+	            EntityPortalEnterEvent event = new EntityPortalEnterEvent(par5Entity.getBukkitEntity(), new org.bukkit.Location(par1World.getWorld(), par2, par3, par4));
+	            par1World.getServer().getPluginManager().callEvent(event);
+        	}
+            // CraftBukkit end
+            
             par5Entity.setInPortal();
         }
     }

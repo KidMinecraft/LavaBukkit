@@ -54,7 +54,7 @@ public class TcpConnection implements INetworkManager
     /**
      * Linked list of packets that have been read and are awaiting processing.
      */
-    private List readPackets;
+    private java.util.Queue readPackets; // CraftBukkit - List -> Queue
 
     /** Linked list of packets awaiting sending. */
     private List dataPackets;
@@ -109,7 +109,7 @@ public class TcpConnection implements INetworkManager
         this.sendQueueLock = new Object();
         this.isRunning = true;
         this.isTerminating = false;
-        this.readPackets = Collections.synchronizedList(new ArrayList());
+        this.readPackets = new java.util.concurrent.ConcurrentLinkedQueue(); // CraftBukkit - synchronizedList(ArrayList) -> ConcurrentLinkedQueue
         this.dataPackets = Collections.synchronizedList(new ArrayList());
         this.chunkDataPackets = Collections.synchronizedList(new ArrayList());
         this.isServerTerminating = false;
@@ -217,7 +217,8 @@ public class TcpConnection implements INetworkManager
                 }
             }
 
-            if (this.chunkDataPacketsDelay-- <= 0 && (this.field_74468_e == 0 || !this.chunkDataPackets.isEmpty() && System.currentTimeMillis() - ((Packet)this.chunkDataPackets.get(0)).creationTimeMillis >= (long)this.field_74468_e))
+            // CraftBukkit - always send low priority packet if no high priority packet was sent (adds '!var1 || ')
+            if ((!var1 || this.chunkDataPacketsDelay-- <= 0) && (this.field_74468_e == 0 || !this.chunkDataPackets.isEmpty() && System.currentTimeMillis() - ((Packet)this.chunkDataPackets.get(0)).creationTimeMillis >= (long)this.field_74468_e))
             {
                 var2 = this.func_74460_a(true);
 
@@ -454,7 +455,8 @@ public class TcpConnection implements INetworkManager
 
         while (!this.readPackets.isEmpty() && var1-- >= 0)
         {
-            Packet var2 = (Packet)this.readPackets.remove(0);
+            Packet var2 = (Packet)this.readPackets.poll(); // CraftBukkit - remove(0) -> poll()
+            
             var2.processPacket(this.theNetHandler);
         }
 

@@ -9,11 +9,18 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.craftbukkit.util.UnsafeList;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockContainer;
+import net.minecraft.block.BlockPistonBase;
 import net.minecraft.block.material.Material;
 import net.minecraft.command.IEntitySelector;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.MathHelper;
@@ -125,12 +132,21 @@ public class Chunk
 
         for (int var4 = 0; var4 < this.entityLists.length; ++var4)
         {
-            this.entityLists[var4] = new ArrayList();
+            this.entityLists[var4] = new UnsafeList(); // CraftBukkit: ArrayList -> UnsafeList
         }
 
         Arrays.fill(this.precipitationHeightMap, -999);
         Arrays.fill(this.blockBiomeArray, (byte) - 1);
+        
+        // CraftBukkit start
+        if (!worldObj.isRemote && !(this instanceof EmptyChunk)) {
+            this.bukkitChunk = new org.bukkit.craftbukkit.CraftChunk(this);
+        }
     }
+
+    public org.bukkit.Chunk bukkitChunk;
+    public boolean mustSave;
+    // CraftBukkit end
 
     public Chunk(World par1World, byte[] par2ArrayOfByte, int par3, int par4)
     {
@@ -765,11 +781,17 @@ public class Chunk
                 {
                     if (!this.worldObj.isRemote)
                     {
+                        // CraftBukkit - Don't extend piston until data is set
+                        if (!(Block.blocksList[par4] instanceof BlockPistonBase) || var9 != 0)
+                        
                         Block.blocksList[par4].onBlockAdded(this.worldObj, var12, par2, var13);
                     }
 
                     if (Block.blocksList[par4] != null && Block.blocksList[par4].hasTileEntity(par5))
                     {
+                    	// CraftBukkit start - don't create tile entity if placement failed
+                        if(getBlockID(par1, par2, par3) != par4) return false;
+                        
                         var14 = this.getChunkBlockTileEntity(par1, par2, par3);
 
                         if (var14 == null)
@@ -919,8 +941,11 @@ public class Chunk
 
         if (var2 != this.xPosition || var3 != this.zPosition)
         {
-            System.out.println("Wrong location! " + par1Entity);
-            Thread.dumpStack();
+        	// CraftBukkit start
+            Bukkit.getLogger().warning("Wrong location for " + par1Entity + " in world '" + par1Entity.worldObj.getWorld().getName() + "'!");
+            // Thread.dumpStack();
+            Bukkit.getLogger().warning("Entity is at " + par1Entity.posX + "," + par1Entity.posZ + " (chunk " + var2 + "," + var3 + ") but was stored in chunk " + this.xPosition + "," + this.zPosition);
+            // CraftBukkit end;
         }
 
         int var4 = MathHelper.floor_double(par1Entity.posY / 16.0D);
@@ -1102,6 +1127,19 @@ public class Chunk
 
         for (int var3 = 0; var3 < this.entityLists.length; ++var3)
         {
+        	// CraftBukkit start
+            java.util.Iterator<Object> iter = this.entityLists[var3].iterator();
+            while (iter.hasNext()) {
+                Entity entity = (Entity) iter.next();
+
+                // Do not pass along players, as doing so can get them stuck outside of time.
+                // (which for example disables inventory icon updates and prevents block breaking)
+                if (entity instanceof EntityPlayerMP) {
+                    iter.remove();
+                }
+            }
+            // CraftBukkit end
+            
             this.worldObj.unloadEntities(this.entityLists[var3]);
         }
         MinecraftForge.EVENT_BUS.post(new ChunkEvent.Unload(this));

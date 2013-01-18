@@ -60,6 +60,7 @@ public class BlockOre extends Block
     {
         super.dropBlockAsItemWithChance(par1World, par2, par3, par4, par5, par6, par7);
 
+        /* CraftBukkit start - delegated getExpDrop
         if (this.idDropped(par5, par1World.rand, par7) != this.blockID)
         {
             int var8 = 0;
@@ -82,7 +83,36 @@ public class BlockOre extends Block
             }
 
             this.dropXpOnBlockBreak(par1World, par2, par3, par4, var8);
+        } */
+    }
+    
+    @Override
+    public int getExpDrop(World par1World, int par2, int par3) {
+    	if (this.idDropped(par2, par1World.rand, par3) != this.blockID)
+        {
+            int var8 = 0;
+
+            if (this.blockID == Block.oreCoal.blockID)
+            {
+                var8 = MathHelper.getRandomIntegerInRange(par1World.rand, 0, 2);
+            }
+            else if (this.blockID == Block.oreDiamond.blockID)
+            {
+                var8 = MathHelper.getRandomIntegerInRange(par1World.rand, 3, 7);
+            }
+            else if (this.blockID == Block.oreEmerald.blockID)
+            {
+                var8 = MathHelper.getRandomIntegerInRange(par1World.rand, 3, 7);
+            }
+            else if (this.blockID == Block.oreLapis.blockID)
+            {
+                var8 = MathHelper.getRandomIntegerInRange(par1World.rand, 2, 5);
+            }
+
+            return var8;
         }
+    	return 0;
+    	// CraftBukkit end
     }
 
     /**

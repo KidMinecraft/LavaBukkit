@@ -6,6 +6,10 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
+
+import org.bukkit.craftbukkit.util.LongHash;
+import org.bukkit.craftbukkit.util.LongHashSet;
+
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.EntityFireworkStarterFX;
@@ -53,7 +57,7 @@ public class WorldClient extends World
      */
     private Set entitySpawnQueue = new HashSet();
     private final Minecraft mc = Minecraft.getMinecraft();
-    private final Set previousActiveChunkSet = new HashSet();
+    private final LongHashSet previousActiveChunkSet = new LongHashSet(); // LavaBukkit - Set/HashSet -> LongHashSet
 
     public WorldClient(NetClientHandler par1NetClientHandler, WorldSettings par2WorldSettings, int par3, int par4, Profiler par5Profiler)
     {
@@ -131,14 +135,17 @@ public class WorldClient extends World
 
         while (var2.hasNext())
         {
-            ChunkCoordIntPair var3 = (ChunkCoordIntPair)var2.next();
+        	long var3 = (Long)var2.next(); // LavaBukkit
 
             if (!this.previousActiveChunkSet.contains(var3))
             {
-                int var4 = var3.chunkXPos * 16;
-                int var5 = var3.chunkZPos * 16;
+            	// LavaBukkit start
+                int chunkX = LongHash.msw(var3), var4 = chunkX * 16;
+                int chunkZ = LongHash.lsw(var3), var5 = chunkZ * 16;
+                // LavaBukkit end
+                
                 this.theProfiler.startSection("getChunk");
-                Chunk var6 = this.getChunkFromChunkCoords(var3.chunkXPos, var3.chunkZPos);
+                Chunk var6 = this.getChunkFromChunkCoords(chunkX, chunkZ); // LavaBukkit
                 this.moodSoundAndLightCheck(var4, var5, var6);
                 this.theProfiler.endSection();
                 this.previousActiveChunkSet.add(var3);

@@ -1,5 +1,7 @@
 package net.minecraft.item;
 
+import org.bukkit.craftbukkit.block.CraftBlockState;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockBed;
 import net.minecraft.creativetab.CreativeTabs;
@@ -31,7 +33,7 @@ public class ItemBed extends Item
         }
         else
         {
-            ++par5;
+        	++par5;
             BlockBed var11 = (BlockBed)Block.bed;
             int var12 = MathHelper.floor_double((double)(par2EntityPlayer.rotationYaw * 4.0F / 360.0F) + 0.5D) & 3;
             byte var13 = 0;
@@ -61,7 +63,13 @@ public class ItemBed extends Item
             {
                 if (par3World.isAirBlock(par4, par5, par6) && par3World.isAirBlock(par4 + var13, par5, par6 + var14) && par3World.doesBlockHaveSolidTopSurface(par4, par5 - 1, par6) && par3World.doesBlockHaveSolidTopSurface(par4 + var13, par5 - 1, par6 + var14))
                 {
-                    par3World.setBlockAndMetadataWithNotify(par4, par5, par6, var11.blockID, var12);
+                	// CraftBukkit start
+                    //par3World.setBlockAndMetadataWithNotify(par4, par5, par6, var11.blockID, var12);
+                    
+                	if(!ItemBlock.processBlockPlace(par3World, par2EntityPlayer, par1ItemStack, par4, par5, par6, par7, var11.blockID, var12, par8, par9, par10)) {
+                		return false;
+                	}
+                    // CraftBukkit end
 
                     if (par3World.getBlockId(par4, par5, par6) == var11.blockID)
                     {

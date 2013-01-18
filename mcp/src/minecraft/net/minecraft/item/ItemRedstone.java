@@ -1,5 +1,7 @@
 package net.minecraft.item;
 
+import org.bukkit.craftbukkit.block.CraftBlockState;
+
 import net.minecraft.block.Block;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.player.EntityPlayer;
@@ -19,6 +21,8 @@ public class ItemRedstone extends Item
      */
     public boolean onItemUse(ItemStack par1ItemStack, EntityPlayer par2EntityPlayer, World par3World, int par4, int par5, int par6, int par7, float par8, float par9, float par10)
     {
+    	int clickedX = par4, clickedY = par5, clickedZ = par6; // CraftBukkit
+    	
         if (par3World.getBlockId(par4, par5, par6) != Block.snow.blockID)
         {
             if (par7 == 0)
@@ -65,6 +69,23 @@ public class ItemRedstone extends Item
         {
             if (Block.redstoneWire.canPlaceBlockAt(par3World, par4, par5, par6))
             {
+            	// CraftBukkit start
+            	if(!par3World.isRemote) {
+	                CraftBlockState blockState = CraftBlockState.getBlockState(par3World, par4, par5, par6);
+	
+	                par3World.editingBlocks = true;
+	                par3World.setBlock(par4, par5, par6, Block.redstoneWire.blockID);
+	
+	                org.bukkit.event.block.BlockPlaceEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callBlockPlaceEvent(par3World, par2EntityPlayer, blockState, clickedX, clickedY, clickedZ);
+	                blockState.update(true);
+	
+	                par3World.editingBlocks = false;
+	                if (event.isCancelled() || !event.canBuild()) {
+	                    return false;
+	                }
+	            }
+                // CraftBukkit end
+                
                 --par1ItemStack.stackSize;
                 par3World.setBlockWithNotify(par4, par5, par6, Block.redstoneWire.blockID);
             }

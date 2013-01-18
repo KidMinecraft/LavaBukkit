@@ -1,5 +1,8 @@
 package net.minecraft.entity;
 
+import org.bukkit.craftbukkit.entity.CraftEntity;
+import org.bukkit.event.entity.EntityTargetEvent;
+
 import net.minecraft.pathfinding.PathEntity;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.Vec3;
@@ -7,10 +10,10 @@ import net.minecraft.world.World;
 
 public abstract class EntityCreature extends EntityLiving
 {
-    private PathEntity pathToEntity;
+    public PathEntity pathToEntity; // CraftBukkit - private -> public. CB name: pathEntity
 
     /** The Entity this EntityCreature is set to attack. */
-    protected Entity entityToAttack;
+    public Entity entityToAttack; // CraftBukkit - protected -> public. CB name: target
 
     /**
      * returns true if a creature has attacked recently only used for creepers and skeletons
@@ -47,8 +50,22 @@ public abstract class EntityCreature extends EntityLiving
 
         if (this.entityToAttack == null)
         {
-            this.entityToAttack = this.findPlayerToAttack();
+        	// CraftBukkit start
+            Entity target = this.findPlayerToAttack();
+            if (target != null) {
+                EntityTargetEvent event = new EntityTargetEvent(this.getBukkitEntity(), target.getBukkitEntity(), EntityTargetEvent.TargetReason.CLOSEST_PLAYER);
+                this.worldObj.getServer().getPluginManager().callEvent(event);
 
+                if (!event.isCancelled()) {
+                    if (event.getTarget() == null) {
+                        this.entityToAttack = null;
+                    } else {
+                        this.entityToAttack = ((CraftEntity) event.getTarget()).getHandle();
+                    }
+                }
+            }
+            // CraftBukkit end
+            
             if (this.entityToAttack != null)
             {
                 this.pathToEntity = this.worldObj.getPathEntityToEntity(this, this.entityToAttack, var1, true, false, false, true);
@@ -65,7 +82,18 @@ public abstract class EntityCreature extends EntityLiving
         }
         else
         {
-            this.entityToAttack = null;
+            // CraftBukkit start
+            EntityTargetEvent event = new EntityTargetEvent(this.getBukkitEntity(), null, EntityTargetEvent.TargetReason.TARGET_DIED);
+            this.worldObj.getServer().getPluginManager().callEvent(event);
+
+            if (!event.isCancelled()) {
+                if (event.getTarget() == null) {
+                    this.entityToAttack = null;
+                } else {
+                    this.entityToAttack = ((CraftEntity) event.getTarget()).getHandle();
+                }
+            }
+            // CraftBukkit end
         }
 
         this.worldObj.theProfiler.endSection();

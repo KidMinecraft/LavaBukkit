@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+
+import org.bukkit.craftbukkit.event.CraftEventFactory;
+
 import net.minecraft.block.Block;
 import net.minecraft.inventory.InventoryCrafting;
 import net.minecraft.item.Item;
@@ -17,6 +20,8 @@ public class CraftingManager
 
     /** A list of all the recipes added */
     private List recipes = new ArrayList();
+    
+    public org.bukkit.inventory.InventoryView lastCraftView; // CraftBukkit
 
     /**
      * Returns the static instance of this class
@@ -281,8 +286,17 @@ public class CraftingManager
             {
                 var10 = 0;
             }
-
-            return new ItemStack(var4.itemID, 1, var10);
+            
+            // CraftBukkit start - construct a dummy repair recipe
+            ItemStack result = new ItemStack(var4.itemID, 1, var10);
+            List<ItemStack> ingredients = new ArrayList<ItemStack>();
+            ingredients.add(var4.copy());
+            ingredients.add(var5.copy());
+            ShapelessRecipes recipe = new ShapelessRecipes(result.copy(), ingredients);
+            par1InventoryCrafting.currentRecipe = recipe;
+            result = CraftEventFactory.callPreCraftEvent(par1InventoryCrafting, result, lastCraftView, true);
+            return result;
+            // CraftBukkit end
         }
         else
         {
@@ -292,7 +306,13 @@ public class CraftingManager
 
                 if (var12.matches(par1InventoryCrafting, par2World))
                 {
-                    return var12.getCraftingResult(par1InventoryCrafting);
+                	// CraftBukkit start - INVENTORY_PRE_CRAFT event
+                	par1InventoryCrafting.currentRecipe = var12;
+                    ItemStack result = var12.getCraftingResult(par1InventoryCrafting);
+                    if(par2World.isRemote)
+                		return result;
+                    return CraftEventFactory.callPreCraftEvent(par1InventoryCrafting, result, lastCraftView, false);
+                    // CraftBukkit end
                 }
             }
 

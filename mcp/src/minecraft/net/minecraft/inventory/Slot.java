@@ -8,7 +8,7 @@ import net.minecraft.item.ItemStack;
 public class Slot
 {
     /** The index of the slot in the inventory. */
-    private final int slotIndex;
+    public final int slotIndex; // CraftBukkit - private -> public
 
     /** The inventory we want to extract a slot from. */
     public final IInventory inventory;

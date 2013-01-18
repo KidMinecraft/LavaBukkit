@@ -2,6 +2,9 @@ package net.minecraft.block;
 
 import java.util.List;
 import java.util.Random;
+
+import org.bukkit.event.block.BlockRedstoneEvent;
+
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityMinecart;
 import net.minecraft.util.AxisAlignedBB;
@@ -97,6 +100,17 @@ public class BlockDetectorRail extends BlockRail
         {
             var7 = true;
         }
+        
+        // CraftBukkit start
+        if (var6 != var7) {
+            org.bukkit.block.Block block = par1World.getWorld().getBlockAt(par2, par3, par4);
+
+            BlockRedstoneEvent eventRedstone = new BlockRedstoneEvent(block, var6 ? 1 : 0, var7 ? 1 : 0);
+            par1World.getServer().getPluginManager().callEvent(eventRedstone);
+
+            var7 = eventRedstone.getNewCurrent() > 0;
+        }
+        // CraftBukkit end
 
         if (var7 && !var6)
         {

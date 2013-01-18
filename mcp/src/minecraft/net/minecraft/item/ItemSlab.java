@@ -77,12 +77,17 @@ public class ItemSlab extends ItemBlock
 
             if ((par7 == 1 && !var14 || par7 == 0 && var14) && var11 == this.theHalfSlab.blockID && var13 == par1ItemStack.getItemDamage())
             {
-                if (par3World.checkIfAABBIsClear(this.theHalfSlab2.getCollisionBoundingBoxFromPool(par3World, par4, par5, par6)) && par3World.setBlockAndMetadataWithNotify(par4, par5, par6, this.theHalfSlab2.blockID, var13))
-                {
-                    par3World.playSoundEffect((double)((float)par4 + 0.5F), (double)((float)par5 + 0.5F), (double)((float)par6 + 0.5F), this.theHalfSlab2.stepSound.getPlaceSound(), (this.theHalfSlab2.stepSound.getVolume() + 1.0F) / 2.0F, this.theHalfSlab2.stepSound.getPitch() * 0.8F);
-                    --par1ItemStack.stackSize;
+            	// CraftBukkit start - handle in processBlockPlace()
+                /*
+                if (world.b(this.c.e(world, i, j, k)) && world.setTypeIdAndData(i, j, k, this.c.id, k1)) {
+                    world.makeSound((double) ((float) i + 0.5F), (double) ((float) j + 0.5F), (double) ((float) k + 0.5F), this.c.stepSound.getPlaceSound(), (this.c.stepSound.getVolume1() + 1.0F) / 2.0F, this.c.stepSound.getVolume2() * 0.8F);
+                    --itemstack.count;
                 }
-
+                */
+                if (par3World.checkIfAABBIsClear(this.theHalfSlab2.getCollisionBoundingBoxFromPool(par3World, par4, par5, par6))) {
+                    processBlockPlace(par3World, par2EntityPlayer, par1ItemStack, par4, par5, par6, par7, this.theHalfSlab2.blockID, var13, par8, par9, par10);
+                }
+                // CraftBukkit end
                 return true;
             }
             else
@@ -189,11 +194,18 @@ public class ItemSlab extends ItemBlock
 
         if (var8 == this.theHalfSlab.blockID && var10 == par1ItemStack.getItemDamage())
         {
+        	// CraftBukkit start - handle in processBlockPlace()
+        	/*
             if (par3World.checkIfAABBIsClear(this.theHalfSlab2.getCollisionBoundingBoxFromPool(par3World, par4, par5, par6)) && par3World.setBlockAndMetadataWithNotify(par4, par5, par6, this.theHalfSlab2.blockID, var10))
             {
                 par3World.playSoundEffect((double)((float)par4 + 0.5F), (double)((float)par5 + 0.5F), (double)((float)par6 + 0.5F), this.theHalfSlab2.stepSound.getPlaceSound(), (this.theHalfSlab2.stepSound.getVolume() + 1.0F) / 2.0F, this.theHalfSlab2.stepSound.getPitch() * 0.8F);
                 --par1ItemStack.stackSize;
             }
+            */
+        	if (par3World.checkIfAABBIsClear(this.theHalfSlab2.getCollisionBoundingBoxFromPool(par3World, par4, par5, par6))) {
+        		processBlockPlace(par3World, par2EntityPlayer, par1ItemStack, par4, par5, par6, par7, theHalfSlab2.blockID, var10, 0, 0, 0);
+        	}
+        	// CraftBukkit end
 
             return true;
         }

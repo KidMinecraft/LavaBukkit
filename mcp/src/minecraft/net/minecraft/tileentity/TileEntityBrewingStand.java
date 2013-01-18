@@ -3,6 +3,10 @@ package net.minecraft.tileentity;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import java.util.List;
+
+import org.bukkit.block.BrewingStand;
+import org.bukkit.event.inventory.BrewEvent;
+
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.Item;
@@ -143,6 +147,17 @@ public class TileEntityBrewingStand extends TileEntity implements IInventory, IS
         if (this.canBrew())
         {
             ItemStack var1 = this.brewingItemStacks[3];
+            
+            // CraftBukkit start - fire BREW event
+            if(!worldObj.isRemote) {
+	            org.bukkit.block.Block owner = worldObj.getWorld().getBlockAt(xCoord, yCoord, zCoord);
+	            BrewEvent event = new BrewEvent(owner, (org.bukkit.inventory.BrewerInventory) ((BrewingStand)owner.getState()).getInventory());
+	            org.bukkit.Bukkit.getPluginManager().callEvent(event);
+	            if(event.isCancelled()) {
+	                return;
+	            }
+            }
+            // CraftBukkit end
 
             for (int var2 = 0; var2 < 3; ++var2)
             {

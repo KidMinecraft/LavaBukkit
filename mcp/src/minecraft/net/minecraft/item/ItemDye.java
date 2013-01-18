@@ -3,6 +3,10 @@ package net.minecraft.item;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import java.util.List;
+
+import org.bukkit.entity.Player;
+import org.bukkit.event.entity.SheepDyeWoolEvent;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockCloth;
 import net.minecraft.block.BlockCrops;
@@ -15,6 +19,7 @@ import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.passive.EntitySheep;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
 
@@ -93,8 +98,11 @@ public class ItemDye extends Item
                 {
                     if (!par3World.isRemote)
                     {
-                        ((BlockSapling)Block.sapling).growTree(par3World, par4, par5, par6, par3World.rand);
-                        --par1ItemStack.stackSize;
+                    	// CraftBukkit start
+                        Player player = (par2EntityPlayer instanceof EntityPlayerMP) ? (Player) par2EntityPlayer.getBukkitEntity() : null;
+                        ((BlockSapling)Block.sapling).growTree(par3World, par4, par5, par6, par3World.rand, true, player, par1ItemStack);
+                        //--par1ItemStack.stackSize; - called later if the bonemeal attempt was succesful
+                        // CraftBukkit end
                     }
 
                     return true;
@@ -102,9 +110,13 @@ public class ItemDye extends Item
 
                 if (var11 == Block.mushroomBrown.blockID || var11 == Block.mushroomRed.blockID)
                 {
-                    if (!par3World.isRemote && ((BlockMushroom)Block.blocksList[var11]).fertilizeMushroom(par3World, par4, par5, par6, par3World.rand))
+                    // CraftBukkit start
+                    if (!par3World.isRemote)
                     {
-                        --par1ItemStack.stackSize;
+                    	Player player = (par2EntityPlayer instanceof EntityPlayerMP) ? (Player) par2EntityPlayer.getBukkitEntity() : null;
+                    	((BlockMushroom)Block.blocksList[var11]).fertilizeMushroom(par3World, par4, par5, par6, par3World.rand, true, player, par1ItemStack);
+                        // --par1ItemStack.stackSize; - called later if the bonemeal attempt was succesful
+                    	// CraftBukkit end
                     }
 
                     return true;
@@ -266,6 +278,18 @@ public class ItemDye extends Item
 
             if (!var3.getSheared() && var3.getFleeceColor() != var4)
             {
+            	// CraftBukkit start
+                byte bColor = (byte) var4;
+                SheepDyeWoolEvent event = new SheepDyeWoolEvent((org.bukkit.entity.Sheep) var3.getBukkitEntity(), org.bukkit.DyeColor.getByData(bColor));
+                var3.worldObj.getServer().getPluginManager().callEvent(event);
+
+                if (event.isCancelled()) {
+                    return false;
+                }
+
+                var4 = (byte) event.getColor().getWoolData();
+                // CraftBukkit end
+                
                 var3.setFleeceColor(var4);
                 --par1ItemStack.stackSize;
             }

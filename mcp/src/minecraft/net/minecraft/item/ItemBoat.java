@@ -83,6 +83,16 @@ public class ItemBoat extends Item
                     var29 = var24.blockX;
                     int var33 = var24.blockY;
                     int var34 = var24.blockZ;
+                    
+                    // CraftBukkit start - Boat placement
+                    if(!par2World.isRemote) {
+	                    org.bukkit.event.player.PlayerInteractEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerInteractEvent(par3EntityPlayer, org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK, var29, var33, var34, var24.sideHit, par1ItemStack);
+	
+	                    if (event.isCancelled()) {
+	                        return par1ItemStack;
+	                    }
+                    }
+                    // CraftBukkit end
 
                     if (par2World.getBlockId(var29, var33, var34) == Block.snow.blockID)
                     {

@@ -6,6 +6,9 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
+
+import org.bukkit.event.block.BlockRedstoneEvent;
+
 import net.minecraft.block.material.Material;
 import net.minecraft.item.Item;
 import net.minecraft.util.AxisAlignedBB;
@@ -176,6 +179,15 @@ public class BlockRedstoneWire extends Block
                 var9 = 0;
             }
         }
+        
+        // CraftBukkit start
+        if (var8 != var9) {
+            BlockRedstoneEvent event = new BlockRedstoneEvent(par1World.getWorld().getBlockAt(par2, par3, par4), var8, var9);
+            par1World.getServer().getPluginManager().callEvent(event);
+
+            var9 = event.getNewCurrent();
+        }
+        // CraftBukkit end
 
         if (var8 != var9)
         {
@@ -279,8 +291,10 @@ public class BlockRedstoneWire extends Block
      */
     public void onBlockAdded(World par1World, int par2, int par3, int par4)
     {
-        super.onBlockAdded(par1World, par2, par3, par4);
+    	if (par1World.editingBlocks) return; // CraftBukkit
 
+        super.onBlockAdded(par1World, par2, par3, par4);
+        
         if (!par1World.isRemote)
         {
             this.updateAndPropagateCurrentStrength(par1World, par2, par3, par4);
@@ -392,7 +406,8 @@ public class BlockRedstoneWire extends Block
      * Returns the current strength at the specified block if it is greater than the passed value, or the passed value
      * otherwise. Signature: (world, x, y, z, strength)
      */
-    private int getMaxCurrentStrength(World par1World, int par2, int par3, int par4, int par5)
+    // CraftBukkit: private -> public
+    public int getMaxCurrentStrength(World par1World, int par2, int par3, int par4, int par5)
     {
         if (par1World.getBlockId(par2, par3, par4) != this.blockID)
         {

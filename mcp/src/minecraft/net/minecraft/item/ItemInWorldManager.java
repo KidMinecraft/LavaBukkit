@@ -1,9 +1,15 @@
 package net.minecraft.item;
 
+import org.bukkit.craftbukkit.event.CraftEventFactory;
+import org.bukkit.event.block.BlockBreakEvent;
+
 import net.minecraft.block.Block;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.Packet53BlockChange;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.EnumGameType;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
@@ -154,8 +160,24 @@ public class ItemInWorldManager
      */
     public void onBlockClicked(int par1, int par2, int par3, int par4)
     {
+    	// CraftBukkit
+        org.bukkit.event.player.PlayerInteractEvent cbevent = CraftEventFactory.callPlayerInteractEvent(this.thisPlayerMP, org.bukkit.event.block.Action.LEFT_CLICK_BLOCK, par1, par2, par3, par4, this.thisPlayerMP.inventory.getCurrentItem());
+
         if (!this.gameType.isAdventure() || this.thisPlayerMP.canCurrentToolHarvestBlock(par1, par2, par3))
         {
+        	// CraftBukkit start
+            if (cbevent.isCancelled()) {
+                // Let the client know the block still exists
+                this.thisPlayerMP.playerNetServerHandler.sendPacketToPlayer(new Packet53BlockChange(par1, par2, par3, this.theWorld));
+                // Update any tile entity data for this block
+                TileEntity tileentity = this.theWorld.getBlockTileEntity(par1, par2, par3);
+                Packet dp = tileentity == null ? null : tileentity.getDescriptionPacket();
+                if (dp != null)
+                    this.thisPlayerMP.playerNetServerHandler.sendPacketToPlayer(dp);
+                return;
+            }
+            // CraftBukkit end
+            
             PlayerInteractEvent event = ForgeEventFactory.onPlayerInteract(thisPlayerMP, Action.LEFT_CLICK_BLOCK, par1, par2, par3, par4);
             if (event.isCanceled())
             {
@@ -179,7 +201,7 @@ public class ItemInWorldManager
 
                 if (block != null)
                 {
-                    if (event.useBlock != Event.Result.DENY)
+                    if (event.useBlock != Event.Result.DENY && cbevent.useInteractedBlock() != org.bukkit.event.Event.Result.DENY) // CraftBukkit
                     {
                         block.onBlockClicked(theWorld, par1, par2, par3, thisPlayerMP);
                         theWorld.extinguishFire(thisPlayerMP, par1, par2, par3, par4);
@@ -191,7 +213,7 @@ public class ItemInWorldManager
                     var5 = block.getPlayerRelativeBlockHardness(thisPlayerMP, thisPlayerMP.worldObj, par1, par2, par3);
                 }
 
-                if (event.useItem == Event.Result.DENY)
+                if (event.useItem == Event.Result.DENY || cbevent.useItemInHand() == org.bukkit.event.Event.Result.DENY) // CraftBukkit
                 {
                     if (var5 >= 1.0f)
                     {
@@ -199,6 +221,20 @@ public class ItemInWorldManager
                     }
                     return;
                 }
+                
+                // CraftBukkit start
+                org.bukkit.event.block.BlockDamageEvent blockEvent = CraftEventFactory.callBlockDamageEvent(this.thisPlayerMP, par1, par2, par3, this.thisPlayerMP.inventory.getCurrentItem(), var5 >= 1.0f);
+                
+                if (blockEvent.isCancelled()) {
+                    // Let the client know the block still exists
+                    this.thisPlayerMP.playerNetServerHandler.sendPacketToPlayer(new Packet53BlockChange(par1, par2, par3, this.theWorld));
+                    return;
+                }
+                
+                if(blockEvent.getInstaBreak())
+                	var5 = 2.0f;
+                
+                // CraftBukkit end
 
                 if (var6 > 0 && var5 >= 1.0F)
                 {
@@ -247,6 +283,8 @@ public class ItemInWorldManager
                 }
             }
         }
+        // CraftBukkit - force blockreset to client
+        else this.thisPlayerMP.playerNetServerHandler.sendPacketToPlayer(new Packet53BlockChange(par1, par2, par3, theWorld));
     }
 
     /**
@@ -286,8 +324,56 @@ public class ItemInWorldManager
      */
     public boolean tryHarvestBlock(int par1, int par2, int par3)
     {
-        if (this.gameType.isAdventure() && !this.thisPlayerMP.canCurrentToolHarvestBlock(par1, par2, par3))
+    	// CraftBukkit start
+        BlockBreakEvent event = null;
+
+        if (this.thisPlayerMP instanceof EntityPlayerMP) {
+            org.bukkit.block.Block block = this.theWorld.getWorld().getBlockAt(par1, par2, par3);
+
+            // Tell client the block is gone immediately then process events
+            if (theWorld.getBlockTileEntity(par1, par2, par3) == null) {
+                Packet53BlockChange packet = new Packet53BlockChange(par1, par2, par3, theWorld);
+
+                packet.type = 0;
+                packet.metadata = 0;
+                this.thisPlayerMP.playerNetServerHandler.sendPacketToPlayer(packet);
+            }
+
+            event = new BlockBreakEvent(block, this.thisPlayerMP.getBukkitEntity());
+
+            // Adventure mode pre-cancel
+            event.setCancelled(this.gameType.isAdventure() && !this.thisPlayerMP.canCurrentToolHarvestBlock(par1, par2, par3));
+
+            // Calculate default block experience
+            Block nmsBlock = Block.blocksList[block.getTypeId()];
+
+            if (nmsBlock != null && !event.isCancelled() && !this.isCreative() && this.thisPlayerMP.canHarvestBlock(nmsBlock)) {
+                // Copied from Block.a(world, entityhuman, int, int, int, int)
+                if (!(nmsBlock.canSilkHarvest(theWorld, thisPlayerMP, par1, par2, par3, theWorld.getBlockMetadata(par1, par2, par3)) && EnchantmentHelper.getSilkTouchModifier(thisPlayerMP))) {
+                    int data = block.getData();
+                    int bonusLevel = EnchantmentHelper.getFortuneModifier(this.thisPlayerMP);
+
+                    event.setExpToDrop(nmsBlock.getExpDrop(this.theWorld, data, bonusLevel));
+                }
+            }
+
+            this.theWorld.getServer().getPluginManager().callEvent(event);
+
+            if (event.isCancelled()) {
+                // Let the client know the block still exists
+                thisPlayerMP.playerNetServerHandler.sendPacketToPlayer(new Packet53BlockChange(par1, par2, par3, theWorld));
+                // Update any tile entity data for this block
+                TileEntity tileentity = this.theWorld.getBlockTileEntity(par1, par2, par3);
+                Packet dp = tileentity == null ? null : tileentity.getDescriptionPacket();
+                if(dp != null)
+                	thisPlayerMP.playerNetServerHandler.sendPacketToPlayer(dp);
+                return false;
+            }
+        }
+        
+        if(false) // Never trigger
         {
+        	// CraftBukkit end
             return false;
         }
         else
@@ -298,6 +384,7 @@ public class ItemInWorldManager
                 return false;
             }
             int var4 = this.theWorld.getBlockId(par1, par2, par3);
+            if (Block.blocksList[var4] == null) return false; // CraftBukkit - a plugin set block to air without cancelling
             int var5 = this.theWorld.getBlockMetadata(par1, par2, par3);
             this.theWorld.playAuxSFXAtEntity(this.thisPlayerMP, 2001, par1, par2, par3, var4 + (this.theWorld.getBlockMetadata(par1, par2, par3) << 12));
             boolean var6 = false;
@@ -333,6 +420,12 @@ public class ItemInWorldManager
                     Block.blocksList[var4].harvestBlock(this.theWorld, this.thisPlayerMP, par1, par2, par3, var5);
                 }
             }
+            
+            // CraftBukkit start - drop event experience
+            if (var6 && event != null) {
+                Block.blocksList[var4].dropXpOnBlockBreak(this.theWorld, par1, par2, par3, event.getExpToDrop());
+            }
+            // CraftBukkit end
 
             return var6;
         }

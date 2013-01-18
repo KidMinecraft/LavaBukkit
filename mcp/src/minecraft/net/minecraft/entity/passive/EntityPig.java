@@ -1,5 +1,7 @@
 package net.minecraft.entity.passive;
 
+import org.bukkit.craftbukkit.event.CraftEventFactory;
+
 import net.minecraft.entity.EntityAgeable;
 import net.minecraft.entity.ai.EntityAIControlledByPlayer;
 import net.minecraft.entity.ai.EntityAIFollowParent;
@@ -212,8 +214,16 @@ public class EntityPig extends EntityAnimal
         if (!this.worldObj.isRemote)
         {
             EntityPigZombie var2 = new EntityPigZombie(this.worldObj);
+            
+            // CraftBukkit start
+            if (CraftEventFactory.callPigZapEvent(this, par1EntityLightningBolt, var2).isCancelled()) {
+                return;
+            }
+            // CraftBukkit end
+            
             var2.setLocationAndAngles(this.posX, this.posY, this.posZ, this.rotationYaw, this.rotationPitch);
-            this.worldObj.spawnEntityInWorld(var2);
+            // CraftBukkit - added a reason for spawning this creature
+            this.worldObj.spawnEntityInWorld(var2, org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.LIGHTNING);
             this.setDead();
         }
     }

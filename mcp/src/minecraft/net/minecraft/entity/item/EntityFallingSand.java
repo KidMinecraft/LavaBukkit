@@ -4,12 +4,16 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import java.util.ArrayList;
 import java.util.Iterator;
+
+import org.bukkit.craftbukkit.event.CraftEventFactory;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockSand;
 import net.minecraft.crash.CrashReportCategory;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
@@ -30,6 +34,8 @@ public class EntityFallingSand extends Entity
 
     /** Actual damage dealt to entities hit by falling block */
     private float fallHurtAmount;
+    
+    private NBTTagCompound tileEntityData; // CraftBukkit
 
     public EntityFallingSand(World par1World)
     {
@@ -118,11 +124,23 @@ public class EntityFallingSand extends Entity
 
                 if (this.fallTime == 1)
                 {
-                    if (this.fallTime != 1 || this.worldObj.getBlockId(var1, var2, var3) != this.blockID)
+                	// CraftBukkit - compare data and call event)
+                    if (this.fallTime != 1 || this.worldObj.getBlockId(var1, var2, var3) != this.blockID || worldObj.getBlockMetadata(var1, var2, var3) != this.metadata || CraftEventFactory.callEntityChangeBlockEvent(this, var1, var2, var3, 0, 0).isCancelled())
                     {
                         this.setDead();
                         return;
                     }
+                    
+                    // CraftBukkit start - Store the block tile entity with this entity
+                    TileEntity tile = this.worldObj.getBlockTileEntity(var1, var2, var3);
+                    if (tile != null) {
+                        tileEntityData = new NBTTagCompound();
+                        // Save the data
+                        tile.writeToNBT(tileEntityData);
+                        // Remove the existing tile entity
+                        this.worldObj.removeBlockTileEntity(var1, var2, var3);
+                    }
+                    // CraftBukkit end
 
                     this.worldObj.setBlockWithNotify(var1, var2, var3, 0);
                 }
@@ -139,6 +157,15 @@ public class EntityFallingSand extends Entity
 
                         if (!this.isBreakingAnvil && this.worldObj.canPlaceEntityOnSide(this.blockID, var1, var2, var3, true, 1, (Entity)null) && !BlockSand.canFallBelow(this.worldObj, var1, var2 - 1, var3) && this.worldObj.setBlockAndMetadataWithNotify(var1, var2, var3, this.blockID, this.metadata))
                         {
+                            // CraftBukkit start
+                        	if (CraftEventFactory.callEntityChangeBlockEvent(this, var1, var2, var3, this.blockID, this.metadata).isCancelled()) {
+                                return;
+                            }
+                        	if (this.tileEntityData != null) {
+                                this.worldObj.setBlockTileEntity(var1, var2, var3, TileEntity.createAndLoadEntity(this.tileEntityData));
+                            }
+                        	
+                        	// CraftBukkit end
                             if (Block.blocksList[this.blockID] instanceof BlockSand)
                             {
                                 ((BlockSand)Block.blocksList[this.blockID]).onFinishFalling(this.worldObj, var1, var2, var3, this.metadata);
@@ -215,6 +242,12 @@ public class EntityFallingSand extends Entity
         par1NBTTagCompound.setBoolean("HurtEntities", this.isAnvil);
         par1NBTTagCompound.setFloat("FallHurtAmount", this.fallHurtAmount);
         par1NBTTagCompound.setInteger("FallHurtMax", this.fallHurtMax);
+        
+        // CraftBukkit start - store the tile data
+        if (this.tileEntityData != null) {
+            par1NBTTagCompound.setTag("Bukkit.tileData", this.tileEntityData.copy());
+        }
+        // CraftBukkit end
     }
 
     /**
@@ -236,6 +269,12 @@ public class EntityFallingSand extends Entity
         {
             this.isAnvil = true;
         }
+        
+        // CraftBukkit start - load tileData
+        if (par1NBTTagCompound.hasKey("Bukkit.tileData")) {
+            this.tileEntityData = (NBTTagCompound) par1NBTTagCompound.getCompoundTag("Bukkit.tileData").copy();
+        }
+        // CraftBukkit end
 
         if (par1NBTTagCompound.hasKey("DropItem"))
         {

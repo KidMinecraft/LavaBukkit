@@ -29,6 +29,8 @@ public class BlockDispenser extends BlockContainer
     /** Registry for all dispense behaviors. */
     public static final IRegistry dispenseBehaviorRegistry = new RegistryDefaulted(new BehaviorDefaultDispenseItem());
     private Random random = new Random();
+    
+    public static boolean eventFired = false; // CraftBukkit
 
     protected BlockDispenser(int par1)
     {
@@ -152,7 +154,8 @@ public class BlockDispenser extends BlockContainer
         }
     }
 
-    private void dispense(World par1World, int par2, int par3, int par4)
+	// CraftBukkit - private -> public
+    public void dispense(World par1World, int par2, int par3, int par4)
     {
         BlockSourceImpl var5 = new BlockSourceImpl(par1World, par2, par3, par4);
         TileEntityDispenser var6 = (TileEntityDispenser)var5.func_82619_j();
@@ -173,6 +176,7 @@ public class BlockDispenser extends BlockContainer
                 if (var9 != IBehaviorDispenseItem.itemDispenseBehaviorProvider)
                 {
                     ItemStack var10 = var9.dispense(var5, var8);
+                    eventFired = false; // CraftBukkit - reset event status
                     var6.setInventorySlotContents(var7, var10.stackSize == 0 ? null : var10);
                 }
             }

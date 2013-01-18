@@ -190,6 +190,10 @@ public class BiomeDecorator
      */
     public void decorate(World par1World, Random par2Random, int par3, int par4)
     {
+    	// LavaBukkit start - allow recursive decorating
+    	World pw = currentWorld; currentWorld = null;
+    	Random rg = randomGenerator;
+    	// LavaBukkit end
         if (this.currentWorld != null)
         {
             throw new RuntimeException("Already decorating!!");
@@ -204,6 +208,10 @@ public class BiomeDecorator
             this.currentWorld = null;
             this.randomGenerator = null;
         }
+        // LavaBukkit start
+        currentWorld = pw;
+        randomGenerator = rg;
+        // LavaBukkit end
     }
 
     /**

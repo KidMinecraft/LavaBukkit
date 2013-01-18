@@ -2,6 +2,8 @@ package net.minecraft.item;
 
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.network.packet.Packet8UpdateHealth;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.world.World;
 
@@ -54,7 +56,22 @@ public class ItemFood extends Item
     public ItemStack onFoodEaten(ItemStack par1ItemStack, World par2World, EntityPlayer par3EntityPlayer)
     {
         --par1ItemStack.stackSize;
-        par3EntityPlayer.getFoodStats().addStats(this);
+        
+        // CraftBukkit start
+        if(!par2World.isRemote) {
+	        int oldFoodLevel = par3EntityPlayer.getFoodStats().getFoodLevel();
+	
+	        org.bukkit.event.entity.FoodLevelChangeEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callFoodLevelChangeEvent(par3EntityPlayer, this.getHealAmount() + oldFoodLevel);
+	
+	        if (!event.isCancelled()) {
+	            par3EntityPlayer.getFoodStats().addStats(event.getFoodLevel() - oldFoodLevel, this.getSaturationModifier());
+	        }
+	
+	        if(par3EntityPlayer instanceof EntityPlayerMP)
+	        	((EntityPlayerMP) par3EntityPlayer).playerNetServerHandler.sendPacketToPlayer(new Packet8UpdateHealth(par3EntityPlayer.getHealth(), par3EntityPlayer.getFoodStats().getFoodLevel(), par3EntityPlayer.getFoodStats().getSaturationLevel()));
+        }
+        // CraftBukkit end
+        
         par2World.playSoundAtEntity(par3EntityPlayer, "random.burp", 0.5F, par2World.rand.nextFloat() * 0.1F + 0.9F);
         this.func_77849_c(par1ItemStack, par2World, par3EntityPlayer);
         return par1ItemStack;

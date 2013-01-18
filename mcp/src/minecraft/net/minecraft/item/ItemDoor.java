@@ -1,9 +1,13 @@
 package net.minecraft.item;
 
+import org.bukkit.craftbukkit.block.CraftBlockState;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.network.packet.Packet53BlockChange;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
 
@@ -52,7 +56,11 @@ public class ItemDoor extends Item
                 else
                 {
                     int var12 = MathHelper.floor_double((double)((par2EntityPlayer.rotationYaw + 180.0F) * 4.0F / 360.0F) - 0.5D) & 3;
-                    placeDoorBlock(par3World, par4, par5, par6, var12, var11);
+                    // CraftBukkit start
+                    if (!placeDoorBlock(par3World, par4, par5, par6, var12, var11, par2EntityPlayer)) {
+                        return false;
+                    }
+                    // CraftBukkit end
                     --par1ItemStack.stackSize;
                     return true;
                 }
@@ -66,6 +74,13 @@ public class ItemDoor extends Item
 
     public static void placeDoorBlock(World par0World, int par1, int par2, int par3, int par4, Block par5Block)
     {
+    	// CraftBukkit start
+    	placeDoorBlock(par0World, par1, par2, par3, par4, par5Block, null);
+    }
+    
+    public static boolean placeDoorBlock(World par0World, int par1, int par2, int par3, int par4, Block par5Block, EntityPlayer entityhuman)
+    {
+    	// CraftBukkit end
         byte var6 = 0;
         byte var7 = 0;
 
@@ -105,10 +120,26 @@ public class ItemDoor extends Item
         }
 
         par0World.editingBlocks = true;
-        par0World.setBlockAndMetadataWithNotify(par1, par2, par3, par5Block.blockID, par4);
+        // CraftBukkit start
+        if (entityhuman != null && !par0World.isRemote) {
+        	if(!ItemBlock.processBlockPlace(par0World, entityhuman, null, par1, par2, par3, 1, par5Block.blockID, par4, 0, 0, 0)) {
+        		return false;
+        	}
+        	
+        	if (par0World.getBlockId(par1, par2, par3) != par5Block.blockID) {
+                ((EntityPlayerMP) entityhuman).playerNetServerHandler.sendPacketToPlayer(new Packet53BlockChange(par1, par2 + 1, par3, par0World));
+                return true;
+            }
+        	
+        	par0World.editingBlocks = true;
+        } else {
+        	par0World.setBlockAndMetadataWithNotify(par1, par2, par3, par5Block.blockID, par4);
+        }
+        // CraftBukkit end
         par0World.setBlockAndMetadataWithNotify(par1, par2 + 1, par3, par5Block.blockID, 8 | (var12 ? 1 : 0));
         par0World.editingBlocks = false;
         par0World.notifyBlocksOfNeighborChange(par1, par2, par3, par5Block.blockID);
         par0World.notifyBlocksOfNeighborChange(par1, par2 + 1, par3, par5Block.blockID);
+        return true; // CraftBukkit
     }
 }

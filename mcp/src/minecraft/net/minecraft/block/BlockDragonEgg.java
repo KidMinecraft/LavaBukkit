@@ -3,6 +3,9 @@ package net.minecraft.block;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import java.util.Random;
+
+import org.bukkit.event.block.BlockFromToEvent;
+
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.item.EntityFallingSand;
 import net.minecraft.entity.player.EntityPlayer;
@@ -53,7 +56,8 @@ public class BlockDragonEgg extends Block
 
             if (!BlockSand.fallInstantly && par1World.checkChunksExist(par2 - var5, par3 - var5, par4 - var5, par2 + var5, par3 + var5, par4 + var5))
             {
-                EntityFallingSand var6 = new EntityFallingSand(par1World, (double)((float)par2 + 0.5F), (double)((float)par3 + 0.5F), (double)((float)par4 + 0.5F), this.blockID);
+            	// CraftBukkit - added data
+                EntityFallingSand var6 = new EntityFallingSand(par1World, (double)((float)par2 + 0.5F), (double)((float)par3 + 0.5F), (double)((float)par4 + 0.5F), this.blockID, par1World.getBlockMetadata(par2, par3, par4));
                 par1World.spawnEntityInWorld(var6);
             }
             else
@@ -107,6 +111,21 @@ public class BlockDragonEgg extends Block
                 {
                     if (!par1World.isRemote)
                     {
+                        // CraftBukkit start
+                        org.bukkit.block.Block from = par1World.getWorld().getBlockAt(par2, par3, par4);
+                        org.bukkit.block.Block to = par1World.getWorld().getBlockAt(var6, var7, var8);
+                        BlockFromToEvent event = new BlockFromToEvent(from, to);
+                        org.bukkit.Bukkit.getPluginManager().callEvent(event);
+
+                        if (event.isCancelled()) {
+                            return;
+                        }
+
+                        var6 = event.getToBlock().getX();
+                        var7 = event.getToBlock().getY();
+                        var8 = event.getToBlock().getZ();
+                        // CraftBukkit end
+                        
                         par1World.setBlockAndMetadataWithNotify(var6, var7, var8, this.blockID, par1World.getBlockMetadata(par2, par3, par4));
                         par1World.setBlockWithNotify(par2, par3, par4, 0);
                     }

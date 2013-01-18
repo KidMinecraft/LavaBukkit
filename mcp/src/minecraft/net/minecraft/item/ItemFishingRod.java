@@ -1,5 +1,7 @@
 package net.minecraft.item;
 
+import org.bukkit.event.player.PlayerFishEvent;
+
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.creativetab.CreativeTabs;
@@ -51,6 +53,17 @@ public class ItemFishingRod extends Item
         }
         else
         {
+        	// CraftBukkit start
+        	if(!par2World.isRemote) {
+	            PlayerFishEvent playerFishEvent = new PlayerFishEvent((org.bukkit.entity.Player) par3EntityPlayer.getBukkitEntity(), null, PlayerFishEvent.State.FISHING);
+	            par2World.getServer().getPluginManager().callEvent(playerFishEvent);
+	
+	            if (playerFishEvent.isCancelled()) {
+	                return par1ItemStack;
+	            }
+        	}
+            // CraftBukkit end
+            
             par2World.playSoundAtEntity(par3EntityPlayer, "random.bow", 0.5F, 0.4F / (itemRand.nextFloat() * 0.4F + 0.8F));
 
             if (!par2World.isRemote)

@@ -14,7 +14,7 @@ import net.minecraft.util.AxisAlignedBB;
 
 public class TileEntityChest extends TileEntity implements IInventory
 {
-    private ItemStack[] chestContents = new ItemStack[36];
+    private ItemStack[] chestContents = new ItemStack[27]; // CraftBukkit - 36 -> 27
 
     /** Determines if the check for adjacent chests has taken place. */
     public boolean adjacentChestChecked = false;
@@ -193,6 +193,7 @@ public class TileEntityChest extends TileEntity implements IInventory
      */
     public boolean isUseableByPlayer(EntityPlayer par1EntityPlayer)
     {
+    	if(worldObj == null) return false; // CraftBukkit
         return this.worldObj.getBlockTileEntity(this.xCoord, this.yCoord, this.zCoord) != this ? false : par1EntityPlayer.getDistanceSq((double)this.xCoord + 0.5D, (double)this.yCoord + 0.5D, (double)this.zCoord + 0.5D) <= 64.0D;
     }
 
@@ -308,6 +309,8 @@ public class TileEntityChest extends TileEntity implements IInventory
     public void updateEntity()
     {
         super.updateEntity();
+        if(worldObj == null) return; // CraftBukkit
+        
         this.checkForAdjacentChests();
         ++this.ticksSinceSync;
         float var1;
@@ -416,12 +419,14 @@ public class TileEntityChest extends TileEntity implements IInventory
     public void openChest()
     {
         ++this.numUsingPlayers;
+        if(worldObj == null) return; // CraftBukkit
         this.worldObj.addBlockEvent(this.xCoord, this.yCoord, this.zCoord, Block.chest.blockID, 1, this.numUsingPlayers);
     }
 
     public void closeChest()
     {
         --this.numUsingPlayers;
+        if(worldObj == null) return; // CraftBukkit
         this.worldObj.addBlockEvent(this.xCoord, this.yCoord, this.zCoord, Block.chest.blockID, 1, this.numUsingPlayers);
     }
 

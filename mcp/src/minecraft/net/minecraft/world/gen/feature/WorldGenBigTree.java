@@ -1,11 +1,15 @@
 package net.minecraft.world.gen.feature;
 
+import immibis.lavabukkit.nms.MCPBlockChangeDelegate;
+import immibis.lavabukkit.nms.NMSUtils;
+
 import java.util.Random;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockSapling.TreeGenerator;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
 
-public class WorldGenBigTree extends WorldGenerator
+public class WorldGenBigTree extends WorldGenerator implements TreeGenerator // CraftBukkit add interface
 {
     /**
      * Contains three sets of two values that provide complimentary indices for a given 'major' index - 1 and 2 for 0, 0
@@ -17,7 +21,7 @@ public class WorldGenBigTree extends WorldGenerator
     Random rand = new Random();
 
     /** Reference to the World object. */
-    World worldObj;
+    MCPBlockChangeDelegate worldObj; // LavaBukkit
     int[] basePos = new int[] {0, 0, 0};
     int heightLimit = 0;
     int height;
@@ -482,7 +486,8 @@ public class WorldGenBigTree extends WorldGenerator
         this.leafDensity = par5;
     }
 
-    public boolean generate(World par1World, Random par2Random, int par3, int par4, int par5)
+    // CraftBukkit - changed signature
+    public boolean generate(MCPBlockChangeDelegate par1World, Random par2Random, int par3, int par4, int par5)
     {
         this.worldObj = par1World;
         long var6 = par2Random.nextLong();
@@ -509,4 +514,7 @@ public class WorldGenBigTree extends WorldGenerator
             return true;
         }
     }
+
+    // CraftBukkit
+	@Override public boolean generate(World var1, Random var2, int var3, int var4, int var5) {return generate(NMSUtils.createBCD(var1),var2,var3,var4,var5);}
 }

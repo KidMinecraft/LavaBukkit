@@ -1,13 +1,13 @@
 package net.minecraft.entity.projectile;
 
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
 import java.util.List;
+
 import net.minecraft.block.Block;
 import net.minecraft.enchantment.EnchantmentThorns;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.IProjectile;
+import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.monster.EntityEnderman;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -21,6 +21,13 @@ import net.minecraft.util.MathHelper;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
+
+import org.bukkit.entity.Projectile;
+import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.event.player.PlayerPickupItemEvent;
+
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
 public class EntityArrow extends Entity implements IProjectile
 {
@@ -289,6 +296,13 @@ public class EntityArrow extends Entity implements IProjectile
 
             if (var4 != null)
             {
+                // CraftBukkit start
+            	if(!worldObj.isRemote) {
+	                Projectile projectile = (Projectile) this.getBukkitEntity();
+	                ProjectileHitEvent phe = new ProjectileHitEvent(projectile);
+	                this.worldObj.getServer().getPluginManager().callEvent(phe);
+            	}
+                // CraftBukkit end
                 if (var4.entityHit != null)
                 {
                     var20 = MathHelper.sqrt_double(this.motionX * this.motionX + this.motionY * this.motionY + this.motionZ * this.motionZ);
@@ -301,6 +315,9 @@ public class EntityArrow extends Entity implements IProjectile
 
                     DamageSource var21 = null;
 
+                    // CraftBukkit; move damage call up so entity only catches fire if damage succeeds
+                    if (var4.entityHit.attackEntityFrom(var21, var23)) {
+                    	
                     if (this.shootingEntity == null)
                     {
                         var21 = DamageSource.causeArrowDamage(this, this);
@@ -315,8 +332,7 @@ public class EntityArrow extends Entity implements IProjectile
                         var4.entityHit.setFire(5);
                     }
 
-                    if (var4.entityHit.attackEntityFrom(var21, var23))
-                    {
+                    //if (var4.entityHit.attackEntityFrom(var21, var23)) { // CraftBukkit; moved up
                         if (var4.entityHit instanceof EntityLiving)
                         {
                             EntityLiving var24 = (EntityLiving)var4.entityHit;
@@ -500,6 +516,21 @@ public class EntityArrow extends Entity implements IProjectile
     {
         if (!this.worldObj.isRemote && this.inGround && this.arrowShake <= 0)
         {
+            // CraftBukkit start
+        	ItemStack itemstack = new ItemStack(Item.arrow);
+            if (this.canBePickedUp == 1 && par1EntityPlayer.inventory.canHold(itemstack) > 0) {
+                EntityItem item = new EntityItem(this.worldObj, this.posX, this.posY, this.posZ, itemstack);
+
+                PlayerPickupItemEvent event = new PlayerPickupItemEvent((org.bukkit.entity.Player) par1EntityPlayer.getBukkitEntity(), new org.bukkit.craftbukkit.entity.CraftItem(this.worldObj.getServer(), this, item), 0);
+                event.setCancelled(!par1EntityPlayer.canPickUpLoot);
+                this.worldObj.getServer().getPluginManager().callEvent(event);
+
+                if (event.isCancelled()) {
+                    return;
+                }
+            }
+            // CraftBukkit end
+            
             boolean var2 = this.canBePickedUp == 1 || this.canBePickedUp == 2 && par1EntityPlayer.capabilities.isCreativeMode;
 
             if (this.canBePickedUp == 1 && !par1EntityPlayer.inventory.addItemStackToInventory(new ItemStack(Item.arrow, 1)))

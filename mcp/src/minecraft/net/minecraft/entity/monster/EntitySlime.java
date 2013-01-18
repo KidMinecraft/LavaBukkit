@@ -1,5 +1,7 @@
 package net.minecraft.entity.monster;
 
+import org.bukkit.event.entity.SlimeSplitEvent;
+
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
@@ -36,7 +38,8 @@ public class EntitySlime extends EntityLiving implements IMob
         this.dataWatcher.addObject(16, new Byte((byte)1));
     }
 
-    protected void setSlimeSize(int par1)
+    // CraftBukkit - protected -> public
+    public void setSlimeSize(int par1)
     {
         this.dataWatcher.updateObject(16, new Byte((byte)par1));
         this.setSize(0.6F * (float)par1, 0.6F * (float)par1);
@@ -211,6 +214,18 @@ public class EntitySlime extends EntityLiving implements IMob
         if (!this.worldObj.isRemote && var1 > 1 && this.getHealth() <= 0)
         {
             int var2 = 2 + this.rand.nextInt(3);
+            
+            // CraftBukkit start
+            SlimeSplitEvent event = new SlimeSplitEvent((org.bukkit.entity.Slime) this.getBukkitEntity(), var2);
+            this.worldObj.getServer().getPluginManager().callEvent(event);
+
+            if (!event.isCancelled() && event.getCount() > 0) {
+                var2 = event.getCount();
+            } else {
+                super.setDead();
+                return;
+            }
+            // CraftBukkit end
 
             for (int var3 = 0; var3 < var2; ++var3)
             {
@@ -219,7 +234,7 @@ public class EntitySlime extends EntityLiving implements IMob
                 EntitySlime var6 = this.createInstance();
                 var6.setSlimeSize(var1 / 2);
                 var6.setLocationAndAngles(this.posX + (double)var4, this.posY + 0.5D, this.posZ + (double)var5, this.rand.nextFloat() * 360.0F, 0.0F);
-                this.worldObj.spawnEntityInWorld(var6);
+                this.worldObj.spawnEntityInWorld(var6, org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.SLIME_SPLIT); // CraftBukkit - SpawnReason
             }
         }
 

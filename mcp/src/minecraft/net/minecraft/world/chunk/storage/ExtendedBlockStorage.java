@@ -56,6 +56,22 @@ public class ExtendedBlockStorage
             this.skylightArray = new NibbleArray(this.blockLSBArray.length, 4);
         }
     }
+    
+    // CraftBukkit start
+    public ExtendedBlockStorage(int y, boolean flag, byte[] blkIds, byte[] extBlkIds) {
+        this.yBase = y;
+        this.blockLSBArray = blkIds;
+        if (extBlkIds != null) {
+            this.blockMSBArray = new NibbleArray(extBlkIds, 4);
+        }
+        this.blockMetadataArray = new NibbleArray(this.blockLSBArray.length, 4);
+        this.blocklightArray = new NibbleArray(this.blockLSBArray.length, 4);
+        if(flag) {
+        	this.skylightArray = new NibbleArray(this.blockLSBArray.length, 4);
+        }
+        this.removeInvalidBlocks();
+    }
+    // CraftBukkit end
 
     /**
      * Returns the extended block ID for a location in a chunk, merged from a byte array and a NibbleArray to form a
@@ -290,6 +306,22 @@ public class ExtendedBlockStorage
      */
     public void setBlockMSBArray(NibbleArray par1NibbleArray)
     {
+    	// CraftBukkit start - don't hang on to an empty nibble array
+        boolean empty = true;
+        byte[] data = par1NibbleArray.data;
+        for (int i = 0; i < data.length; i++) {
+            if (data[i] != 0) {
+                empty = false;
+                break;
+            }
+        }
+
+        if (empty) {
+        	this.blockMSBArray = null;
+            return;
+        }
+        // CraftBukkit end
+        
         this.blockMSBArray = par1NibbleArray;
     }
 

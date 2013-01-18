@@ -6,6 +6,16 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import java.util.Iterator;
 import java.util.List;
+
+import org.bukkit.craftbukkit.entity.CraftItem;
+import org.bukkit.entity.HumanEntity;
+import org.bukkit.entity.Player;
+import org.bukkit.event.entity.EntityCombustByEntityEvent;
+import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.event.player.PlayerBedEnterEvent;
+import org.bukkit.event.player.PlayerBedLeaveEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockBed;
 import net.minecraft.block.material.Material;
@@ -109,13 +119,23 @@ public abstract class EntityPlayer extends EntityLiving implements ICommandSende
     public double field_71085_bR;
 
     /** Boolean value indicating weather a player is sleeping or not */
-    protected boolean sleeping;
+    // CraftBukkit start
+    public boolean sleeping; // protected -> public
+    public boolean fauxSleeping;
+    public String spawnWorld = "";
+
+    public HumanEntity getBukkitEntity() {
+        return (HumanEntity) super.getBukkitEntity();
+    }
+    
+    public int oldLevel = -1;
+    // CraftBukkit end
 
     /**
      * The chunk coordinates of the bed the player is in (null if player isn't in a bed).
      */
     public ChunkCoordinates playerLocation;
-    private int sleepTimer;
+    public int sleepTimer;// CraftBukkit - private -> public. CB name: sleepTicks
     public float field_71079_bU;
     @SideOnly(Side.CLIENT)
     public float field_71082_cx;
@@ -491,7 +511,7 @@ public abstract class EntityPlayer extends EntityLiving implements ICommandSende
     /**
      * sets current screen to null (used on escape buttons of GUIs)
      */
-    public void closeScreen()
+    public void closeScreen() // CB name: closeInventory
     {
         this.openContainer = this.inventoryContainer;
     }
@@ -552,7 +572,7 @@ public abstract class EntityPlayer extends EntityLiving implements ICommandSende
 
         if (this.worldObj.difficultySetting == 0 && this.getHealth() < this.getMaxHealth() && this.ticksExisted % 20 * 12 == 0)
         {
-            this.heal(1);
+            this.heal(1, EntityRegainHealthEvent.RegainReason.REGEN); // CraftBukkit - added reason
         }
 
         this.inventory.decrementAnimations();
@@ -770,6 +790,21 @@ public abstract class EntityPlayer extends EntityLiving implements ICommandSende
                 var3.motionY += (double)((this.rand.nextFloat() - this.rand.nextFloat()) * 0.1F);
                 var3.motionZ += Math.sin((double)var5) * (double)var4;
             }
+            
+            // CraftBukkit start
+            if(getBukkitEntity() instanceof Player) {
+	            Player player = (Player) this.getBukkitEntity();
+	            CraftItem drop = new CraftItem(this.worldObj.getServer(), var3);
+	
+	            PlayerDropItemEvent event = new PlayerDropItemEvent(player, drop);
+	            this.worldObj.getServer().getPluginManager().callEvent(event);
+	
+	            if (event.isCancelled()) {
+	                player.getInventory().addItem(drop.getItemStack());
+	                return null;
+	            }
+            }
+            // CraftBukkit end
 
             this.joinEntityItemWithWorld(var3);
             this.addStat(StatList.dropStat, 1);
@@ -871,6 +906,13 @@ public abstract class EntityPlayer extends EntityLiving implements ICommandSende
         this.experienceLevel = par1NBTTagCompound.getInteger("XpLevel");
         this.experienceTotal = par1NBTTagCompound.getInteger("XpTotal");
         this.setScore(par1NBTTagCompound.getInteger("Score"));
+        
+        // CraftBukkit start
+        this.spawnWorld = par1NBTTagCompound.getString("SpawnWorld");
+        if ("".equals(spawnWorld)) {
+            this.spawnWorld = this.worldObj.getServer().getWorlds().get(0).getName();
+        }
+        // CraftBukkit end
 
         if (this.sleeping)
         {
@@ -915,6 +957,7 @@ public abstract class EntityPlayer extends EntityLiving implements ICommandSende
             par1NBTTagCompound.setInteger("SpawnY", this.spawnChunk.posY);
             par1NBTTagCompound.setInteger("SpawnZ", this.spawnChunk.posZ);
             par1NBTTagCompound.setBoolean("SpawnForced", this.spawnForced);
+            par1NBTTagCompound.setString("SpawnWorld", spawnWorld); // CraftBukkit - fixes bed spawns for multiworld worlds
         }
 
         this.foodStats.writeNBT(par1NBTTagCompound);
@@ -984,7 +1027,7 @@ public abstract class EntityPlayer extends EntityLiving implements ICommandSende
                 {
                     if (this.worldObj.difficultySetting == 0)
                     {
-                        par2 = 0;
+                        return false; // CraftBukkit - par2 = 0 -> return false
                     }
 
                     if (this.worldObj.difficultySetting == 1)
@@ -998,7 +1041,7 @@ public abstract class EntityPlayer extends EntityLiving implements ICommandSende
                     }
                 }
 
-                if (par2 == 0)
+                if (false && par2 == 0) // CraftBukkit - Don't filter out 0 damage
                 {
                     return false;
                 }
@@ -1217,7 +1260,8 @@ public abstract class EntityPlayer extends EntityLiving implements ICommandSende
 
                 if (var2.interactWith((EntityLiving)par1Entity))
                 {
-                    if (var2.stackSize <= 0 && !this.capabilities.isCreativeMode)
+                	// CraftBukkit - bypass infinite items; <= 0 -> == 0
+                    if (var2.stackSize == 0 && !this.capabilities.isCreativeMode)
                     {
                         this.destroyCurrentEquippedItem();
                     }
@@ -1321,6 +1365,15 @@ public abstract class EntityPlayer extends EntityLiving implements ICommandSende
                     }
 
                     boolean var8 = par1Entity.attackEntityFrom(DamageSource.causePlayerDamage(this), var2);
+                    
+                    // CraftBukkit start - Return when the damage fails so that the item will not lose durability
+                    if (!var8) {
+                        if (var6) {
+                            par1Entity.extinguish();
+                        }
+                        return;
+                    }
+                    // CraftBukkit end
 
                     if (var8)
                     {
@@ -1361,7 +1414,8 @@ public abstract class EntityPlayer extends EntityLiving implements ICommandSende
                     {
                         var9.hitEntity((EntityLiving)par1Entity, this);
 
-                        if (var9.stackSize <= 0)
+                        // CraftBukkit - bypass infinite items; <= 0 -> == 0
+                        if (var9.stackSize == 0)
                         {
                             this.destroyCurrentEquippedItem();
                         }
@@ -1378,7 +1432,16 @@ public abstract class EntityPlayer extends EntityLiving implements ICommandSende
 
                         if (var7 > 0 && var8)
                         {
-                            par1Entity.setFire(var7 * 4);
+                        	// CraftBukkit start - raise a combust event when somebody hits with a fire enchanted item
+                        	if(!worldObj.isRemote) {
+	                            EntityCombustByEntityEvent combustEvent = new EntityCombustByEntityEvent(this.getBukkitEntity(), par1Entity.getBukkitEntity(), var7 * 4);
+	                            org.bukkit.Bukkit.getPluginManager().callEvent(combustEvent);
+	
+	                            if (!combustEvent.isCancelled()) {
+	                                par1Entity.setFire(combustEvent.getDuration());
+	                            }
+                        	}
+                            // CraftBukkit end
                         }
                         else if (var6)
                         {
@@ -1471,6 +1534,20 @@ public abstract class EntityPlayer extends EntityLiving implements ICommandSende
                 return EnumStatus.NOT_SAFE;
             }
         }
+        
+        // CraftBukkit start
+        if (!worldObj.isRemote && this.getBukkitEntity() instanceof Player) {
+            Player player = (Player) this.getBukkitEntity();
+            org.bukkit.block.Block bed = this.worldObj.getWorld().getBlockAt(par1, par2, par3);
+
+            PlayerBedEnterEvent event2 = new PlayerBedEnterEvent(player, bed);
+            this.worldObj.getServer().getPluginManager().callEvent(event2);
+
+            if (event2.isCancelled()) {
+                return EnumStatus.OTHER_PROBLEM;
+            }
+        }
+        // CraftBukkit end
 
         this.setSize(0.2F, 0.2F);
         this.yOffset = 0.2F;
@@ -1575,6 +1652,22 @@ public abstract class EntityPlayer extends EntityLiving implements ICommandSende
         {
             this.worldObj.updateAllPlayersSleepingFlag();
         }
+        
+        // CraftBukkit start
+        if (!worldObj.isRemote && this.getBukkitEntity() instanceof Player) {
+            Player player = (Player) this.getBukkitEntity();
+
+            org.bukkit.block.Block bed;
+            if (var4 != null) {
+                bed = this.worldObj.getWorld().getBlockAt(var4.posX, var4.posY, var4.posZ);
+            } else {
+                bed = this.worldObj.getWorld().getBlockAt(player.getLocation());
+            }
+
+            PlayerBedLeaveEvent event = new PlayerBedLeaveEvent(player, bed);
+            this.worldObj.getServer().getPluginManager().callEvent(event);
+        }
+        // CraftBukkit end
 
         if (par1)
         {
@@ -1731,11 +1824,14 @@ public abstract class EntityPlayer extends EntityLiving implements ICommandSende
         {
             this.spawnChunk = new ChunkCoordinates(par1ChunkCoordinates);
             this.spawnForced = par2;
+            if(!worldObj.isRemote) // LavaBukkit
+            	this.spawnWorld = this.worldObj.getWorld().getName(); // CraftBukkit
         }
         else
         {
             this.spawnChunk = null;
             this.spawnForced = false;
+            this.spawnWorld = ""; // CraftBukkit
         }
     }
 

@@ -1,7 +1,12 @@
 package net.minecraft.server.management;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
+
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.LongHashMap;
 import net.minecraft.world.ChunkCoordIntPair;
@@ -24,7 +29,7 @@ public class PlayerManager
      * contains a PlayerInstance for every chunk they can see. the "player instance" cotains a list of all players who
      * can also that chunk
      */
-    private final List chunkWatcherWithPlayers = new ArrayList();
+    private final Queue chunkWatcherWithPlayers = new java.util.concurrent.ConcurrentLinkedQueue(); // CraftBukkit List/ArrayList -> Queue/ConcurrentLinkedQueue
 
     /**
      * Number of chunks the server sends to the client. Valid 3<=x<=15. In server.properties.
@@ -33,6 +38,8 @@ public class PlayerManager
 
     /** x, z direction vectors: east, south, west, north */
     private final int[][] xzDirectionsConst = new int[][] {{1, 0}, {0, 1}, { -1, 0}, {0, -1}};
+    
+    private boolean wasNotEmpty; // CraftBukkit
 
     public PlayerManager(WorldServer par1WorldServer, int par2)
     {
@@ -61,22 +68,29 @@ public class PlayerManager
      */
     public void updatePlayerInstances()
     {
-        for (int var1 = 0; var1 < this.chunkWatcherWithPlayers.size(); ++var1)
-        {
-            ((PlayerInstance)this.chunkWatcherWithPlayers.get(var1)).sendChunkUpdate();
-        }
-
-        this.chunkWatcherWithPlayers.clear();
+    	// CraftBukkit start - use foreach
+    	for(PlayerInstance pi : (Queue<PlayerInstance>)chunkWatcherWithPlayers)
+    		pi.sendChunkUpdate();
+    	// CraftBukkit end
+    	
+        //this.chunkWatcherWithPlayers.clear(); // CraftBukkit - removals are already covered
 
         if (this.players.isEmpty())
         {
+        	if (!wasNotEmpty) return; // CraftBukkit - only do unload when we go from non-empty to empty
+        	
             WorldProvider var2 = this.theWorldServer.provider;
 
             if (!var2.canRespawnHere())
             {
                 this.theWorldServer.theChunkProviderServer.unloadAllChunks();
             }
+            // CraftBukkit start
+            wasNotEmpty = false;
+        } else {
+            wasNotEmpty = true;
         }
+        // CraftBukkit end
     }
 
     public PlayerInstance getOrCreateChunkWatcher(int par1, int par2, boolean par3)
@@ -92,6 +106,16 @@ public class PlayerManager
 
         return var6;
     }
+    
+    // CraftBukkit start - TODO move out of NMS
+    /*public final boolean isChunkInUse(int x, int z) {
+        PlayerInstance pi = getOrCreateChunkWatcher(x, z, false);
+        if (pi != null) {
+            return (PlayerInstance.playersInChunk.size() > 0);
+        }
+        return false;
+    }*/
+    // CraftBukkit end
 
     /**
      * the "PlayerInstance"/ chunkWatcher will send this chunk to all players who are in line of sight
@@ -117,14 +141,22 @@ public class PlayerManager
         int var3 = (int)par1EntityPlayerMP.posZ >> 4;
         par1EntityPlayerMP.managedPosX = par1EntityPlayerMP.posX;
         par1EntityPlayerMP.managedPosZ = par1EntityPlayerMP.posZ;
-
+        
+        // CraftBukkit start - load nearby chunks first
+        List<ChunkCoordIntPair> chunkList = new LinkedList<ChunkCoordIntPair>();
         for (int var4 = var2 - this.playerViewRadius; var4 <= var2 + this.playerViewRadius; ++var4)
         {
             for (int var5 = var3 - this.playerViewRadius; var5 <= var3 + this.playerViewRadius; ++var5)
             {
-                this.getOrCreateChunkWatcher(var4, var5, true).addPlayerToChunkWatchingList(par1EntityPlayerMP);
+                chunkList.add(new ChunkCoordIntPair(var4, var5));
             }
         }
+
+        Collections.sort(chunkList, new ChunkCoordComparator(par1EntityPlayerMP));
+        for (ChunkCoordIntPair pair : chunkList) {
+            this.getOrCreateChunkWatcher(pair.chunkXPos, pair.chunkZPos, true).addPlayerToChunkWatchingList(par1EntityPlayerMP);
+        }
+        // CraftBukkit end
 
         this.players.add(par1EntityPlayerMP);
         this.filterChunkLoadQueue(par1EntityPlayerMP);
@@ -236,6 +268,7 @@ public class PlayerManager
             int var12 = this.playerViewRadius;
             int var13 = var2 - var10;
             int var14 = var3 - var11;
+            List<ChunkCoordIntPair> chunksToLoad = new LinkedList<ChunkCoordIntPair>(); // CraftBukkit
 
             if (var13 != 0 || var14 != 0)
             {
@@ -245,7 +278,7 @@ public class PlayerManager
                     {
                         if (!this.func_72684_a(var15, var16, var10, var11, var12))
                         {
-                            this.getOrCreateChunkWatcher(var15, var16, true).addPlayerToChunkWatchingList(par1EntityPlayerMP);
+                        	chunksToLoad.add(new ChunkCoordIntPair(var15, var16)); // CraftBukkit
                         }
 
                         if (!this.func_72684_a(var15 - var13, var16 - var14, var2, var3, var12))
@@ -263,6 +296,18 @@ public class PlayerManager
                 this.filterChunkLoadQueue(par1EntityPlayerMP);
                 par1EntityPlayerMP.managedPosX = par1EntityPlayerMP.posX;
                 par1EntityPlayerMP.managedPosZ = par1EntityPlayerMP.posZ;
+                
+                // CraftBukkit start - send nearest chunks first
+                Collections.sort(chunksToLoad, new ChunkCoordComparator(par1EntityPlayerMP));
+                for (ChunkCoordIntPair pair : chunksToLoad) {
+                	this.getOrCreateChunkWatcher(pair.chunkXPos, pair.chunkZPos, true).addPlayerToChunkWatchingList(par1EntityPlayerMP);
+                }
+
+                // LavaBukkit - fixed obfuscated variable names
+                if (var13 > 1 || var13 < -1 || var14 > 1 || var14 < -1) {
+                    Collections.sort(par1EntityPlayerMP.loadedChunks, new ChunkCoordComparator(par1EntityPlayerMP));
+                }
+                // CraftBukkit end
             }
         }
     }
@@ -291,8 +336,51 @@ public class PlayerManager
         return par0PlayerManager.playerInstances;
     }
 
-    static List getChunkWatchersWithPlayers(PlayerManager par0PlayerManager)
+    static Queue getChunkWatchersWithPlayers(PlayerManager par0PlayerManager) // CraftBukkit List -> Queue
     {
         return par0PlayerManager.chunkWatcherWithPlayers;
     }
+    
+    // CraftBukkit start - sorter to load nearby chunks first
+    private static class ChunkCoordComparator implements java.util.Comparator<ChunkCoordIntPair> {
+        private int x;
+        private int z;
+
+        public ChunkCoordComparator (EntityPlayer entityplayer) {
+            x = (int) entityplayer.posX >> 4;
+            z = (int) entityplayer.posZ >> 4;
+        }
+
+        public int compare(ChunkCoordIntPair a, ChunkCoordIntPair b) {
+            if (a.equals(b)) {
+                return 0;
+            }
+
+            // Subtract current position to set center point
+            int ax = a.chunkXPos - this.x;
+            int az = a.chunkZPos - this.z;
+            int bx = b.chunkXPos - this.x;
+            int bz = b.chunkZPos - this.z;
+
+            int result = ((ax - bx) * (ax + bx)) + ((az - bz) * (az + bz));
+            if (result != 0) {
+                return result;
+            }
+
+            if (ax < 0) {
+                if (bx < 0) {
+                    return bz - az;
+                } else {
+                    return -1;
+                }
+            } else {
+                if (bx < 0) {
+                    return 1;
+                } else {
+                    return az - bz;
+                }
+            }
+        }
+    }
+    // CraftBukkit end
 }

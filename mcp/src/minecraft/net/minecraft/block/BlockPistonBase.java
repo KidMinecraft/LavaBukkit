@@ -3,6 +3,10 @@ package net.minecraft.block;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import java.util.List;
+
+import org.bukkit.event.block.BlockPistonExtendEvent;
+import org.bukkit.event.block.BlockPistonRetractEvent;
+
 import net.minecraft.block.material.Material;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.Entity;
@@ -127,13 +131,32 @@ public class BlockPistonBase extends Block
 
             if (var7 && !isExtended(var5))
             {
-                if (canExtend(par1World, par2, par3, par4, var6))
-                {
+                // CraftBukkit start
+                int length = canExtend(par1World, par2, par3, par4, var6);
+                if (length >= 0) {
+                    org.bukkit.block.Block block = par1World.getWorld().getBlockAt(par2, par3, par4);
+                    BlockPistonExtendEvent event = new BlockPistonExtendEvent(block, length, org.bukkit.craftbukkit.block.CraftBlock.notchToBlockFace(var6));
+                    par1World.getServer().getPluginManager().callEvent(event);
+
+                    if (event.isCancelled()) {
+                        return;
+                    }
+                    // CraftBukkit end
                     par1World.addBlockEvent(par2, par3, par4, this.blockID, 0, var6);
                 }
             }
             else if (!var7 && isExtended(var5))
             {
+                // CraftBukkit start
+                org.bukkit.block.Block block = par1World.getWorld().getBlockAt(par2, par3, par4);
+                BlockPistonRetractEvent event = new BlockPistonRetractEvent(block, org.bukkit.craftbukkit.block.CraftBlock.notchToBlockFace(var6));
+                par1World.getServer().getPluginManager().callEvent(event);
+
+                if (event.isCancelled()) {
+                    return;
+                }
+                // CraftBukkit end
+                
                 par1World.addBlockEvent(par2, par3, par4, this.blockID, 1, var6);
             }
         }
@@ -312,6 +335,7 @@ public class BlockPistonBase extends Block
      */
     public static int getOrientation(int par0)
     {
+    	if ((par0 & 7) >= Facing.faceToSide.length) return 0; // CraftBukkit - check for AIOOB on piston data
         return par0 & 7;
     }
 
@@ -387,7 +411,8 @@ public class BlockPistonBase extends Block
     /**
      * checks to see if this piston could push the blocks in front of it.
      */
-    private static boolean canExtend(World par0World, int par1, int par2, int par3, int par4)
+    // CraftBukkit - boolean -> int return
+    private static int canExtend(World par0World, int par1, int par2, int par3, int par4)
     {
         int var5 = par1 + Facing.offsetsXForSide[par4];
         int var6 = par2 + Facing.offsetsYForSide[par4];
@@ -400,7 +425,7 @@ public class BlockPistonBase extends Block
             {
                 if (var6 <= 0 || var6 >= par0World.getHeight() - 1)
                 {
-                    return false;
+                	return -1; // CraftBukkit
                 }
 
                 int var9 = par0World.getBlockId(var5, var6, var7);
@@ -409,14 +434,14 @@ public class BlockPistonBase extends Block
                 {
                     if (!canPushBlock(var9, par0World, var5, var6, var7, true))
                     {
-                        return false;
+                    	return -1; // CraftBukkit
                     }
 
                     if (Block.blocksList[var9].getMobilityFlag() != 1)
                     {
                         if (var8 == 12)
                         {
-                            return false;
+                        	return -1; // CraftBukkit
                         }
 
                         var5 += Facing.offsetsXForSide[par4];
@@ -428,7 +453,7 @@ public class BlockPistonBase extends Block
                 }
             }
 
-            return true;
+            return var8; // CraftBukkit
         }
     }
 

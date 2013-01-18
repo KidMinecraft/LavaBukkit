@@ -1,6 +1,10 @@
 package net.minecraft.block;
 
 import java.util.Random;
+
+import org.bukkit.block.BlockFace;
+import org.bukkit.event.block.BlockFromToEvent;
+
 import net.minecraft.block.material.Material;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
@@ -50,6 +54,12 @@ public class BlockFlowing extends BlockFluid
      */
     public void updateTick(World par1World, int par2, int par3, int par4, Random par5Random)
     {
+        // CraftBukkit start
+        org.bukkit.World bworld = par1World.getWorld();
+        org.bukkit.Server server = par1World.getServer();
+        org.bukkit.block.Block source = bworld == null ? null : bworld.getBlockAt(par2, par3, par4);
+        // CraftBukkit end
+        
         int var6 = this.getFlowDecay(par1World, par2, par3, par4);
         byte var7 = 1;
 
@@ -138,6 +148,16 @@ public class BlockFlowing extends BlockFluid
 
         if (this.liquidCanDisplaceBlock(par1World, par2, par3 - 1, par4))
         {
+            // CraftBukkit start - send "down" to the server
+            BlockFromToEvent event = new BlockFromToEvent(source, BlockFace.DOWN);
+            if (server != null) {
+                server.getPluginManager().callEvent(event);
+            }
+
+            if (event.isCancelled())
+            	return;
+            // CraftBukkit end
+            
             if (this.blockMaterial == Material.lava && par1World.getBlockMaterial(par2, par3 - 1, par4) == Material.water)
             {
                 par1World.setBlockWithNotify(par2, par3 - 1, par4, Block.stone.blockID);
@@ -168,26 +188,26 @@ public class BlockFlowing extends BlockFluid
             {
                 return;
             }
+            
+            // CraftBukkit start - all four cardinal directions. Do not change the order!
+            BlockFace[] faces = new BlockFace[] { BlockFace.WEST, BlockFace.EAST, BlockFace.NORTH, BlockFace.SOUTH };
+            int index = 0;
 
-            if (var13[0])
-            {
-                this.flowIntoBlock(par1World, par2 - 1, par3, par4, var10);
-            }
+            for (BlockFace currentFace : faces) {
+                if (var13[index]) {
+                    BlockFromToEvent event = new BlockFromToEvent(source, currentFace);
 
-            if (var13[1])
-            {
-                this.flowIntoBlock(par1World, par2 + 1, par3, par4, var10);
-            }
+                    if (server != null) {
+                        server.getPluginManager().callEvent(event);
+                    }
 
-            if (var13[2])
-            {
-                this.flowIntoBlock(par1World, par2, par3, par4 - 1, var10);
+                    if (!event.isCancelled()) {
+                        this.flowIntoBlock(par1World, par2 + currentFace.getModX(), par3, par4 + currentFace.getModZ(), var10);
+                    }
+                }
+                index++;
             }
-
-            if (var13[3])
-            {
-                this.flowIntoBlock(par1World, par2, par3, par4 + 1, var10);
-            }
+            // CraftBukkit end
         }
     }
 

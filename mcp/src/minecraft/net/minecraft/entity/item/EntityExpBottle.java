@@ -47,8 +47,17 @@ public class EntityExpBottle extends EntityThrowable
     {
         if (!this.worldObj.isRemote)
         {
-            this.worldObj.playAuxSFX(2002, (int)Math.round(this.posX), (int)Math.round(this.posY), (int)Math.round(this.posZ), 0);
+        	// CraftBukkit moved after event
+            // this.worldObj.playAuxSFX(2002, (int)Math.round(this.posX), (int)Math.round(this.posY), (int)Math.round(this.posZ), 0);
             int var2 = 3 + this.worldObj.rand.nextInt(5) + this.worldObj.rand.nextInt(5);
+
+            // CraftBukkit start
+            org.bukkit.event.entity.ExpBottleEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callExpBottleEvent(this, var2);
+            var2 = event.getExperience();
+            if (event.getShowEffect()) {
+                this.worldObj.playAuxSFX(2002, (int)Math.round(this.posX), (int)Math.round(this.posY), (int)Math.round(this.posZ), 0);
+            }
+            // CraftBukkit end
 
             while (var2 > 0)
             {

@@ -1,5 +1,9 @@
 package net.minecraft.entity.monster;
 
+import org.bukkit.Location;
+import org.bukkit.craftbukkit.event.CraftEventFactory;
+import org.bukkit.event.entity.EntityTeleportEvent;
+
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
@@ -150,9 +154,13 @@ public class EntityEnderman extends EntityMob
 
                     if (carriableBlocks[var4])
                     {
-                        this.setCarried(this.worldObj.getBlockId(var1, var2, var3));
-                        this.setCarryingData(this.worldObj.getBlockMetadata(var1, var2, var3));
-                        this.worldObj.setBlockWithNotify(var1, var2, var3, 0);
+                    	// CraftBukkit start - pickup event
+                        if (!CraftEventFactory.callEntityChangeBlockEvent(this, this.worldObj.getWorld().getBlockAt(var1, var2, var3), org.bukkit.Material.AIR).isCancelled()) {
+                            this.setCarried(this.worldObj.getBlockId(var1, var2, var3));
+                            this.setCarryingData(this.worldObj.getBlockMetadata(var1, var2, var3));
+                            this.worldObj.setBlockWithNotify(var1, var2, var3, 0);
+                        }
+                        // CraftBukkit end
                     }
                 }
             }
@@ -166,8 +174,12 @@ public class EntityEnderman extends EntityMob
 
                 if (var4 == 0 && var5 > 0 && Block.blocksList[var5].renderAsNormalBlock())
                 {
-                    this.worldObj.setBlockAndMetadataWithNotify(var1, var2, var3, this.getCarried(), this.getCarryingData());
-                    this.setCarried(0);
+                    // CraftBukkit start - place event
+                    if (!CraftEventFactory.callEntityChangeBlockEvent(this, var1, var2, var3, this.getCarried(), this.getCarryingData()).isCancelled()) {
+                    	this.worldObj.setBlockAndMetadataWithNotify(var1, var2, var3, this.getCarried(), this.getCarryingData());
+                    	this.setCarried(0);
+                    }
+                    // CraftBukkit end
                 }
             }
         }
@@ -264,6 +276,8 @@ public class EntityEnderman extends EntityMob
      */
     protected boolean teleportTo(double par1, double par3, double par5)
     {
+    	if(worldObj.isRemote) return false; // LavaBukkit bugfix
+    	
         double var7 = this.posX;
         double var9 = this.posY;
         double var11 = this.posZ;
@@ -297,7 +311,16 @@ public class EntityEnderman extends EntityMob
 
             if (var17)
             {
-                this.setPosition(this.posX, this.posY, this.posZ);
+                // CraftBukkit start - teleport event
+                EntityTeleportEvent teleport = new EntityTeleportEvent(this.getBukkitEntity(), new Location(this.worldObj.getWorld(), var7, var9, var11), new Location(this.worldObj.getWorld(), posX, posY, posZ));
+                this.worldObj.getServer().getPluginManager().callEvent(teleport);
+                if (teleport.isCancelled()) {
+                    return false;
+                }
+
+                Location to = teleport.getTo();
+                this.setPosition(to.getX(), to.getY(), to.getZ());
+                // CraftBukkit end
 
                 if (this.worldObj.getCollidingBoundingBoxes(this, this.boundingBox).isEmpty() && !this.worldObj.isAnyLiquid(this.boundingBox))
                 {

@@ -1,5 +1,7 @@
 package net.minecraft.item;
 
+import org.bukkit.craftbukkit.block.CraftBlockState;
+
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
@@ -22,6 +24,8 @@ public class ItemReed extends Item
      */
     public boolean onItemUse(ItemStack par1ItemStack, EntityPlayer par2EntityPlayer, World par3World, int par4, int par5, int par6, int par7, float par8, float par9, float par10)
     {
+    	int clickedX = par4, clickedY = par5, clickedZ = par6; // CraftBukkit
+    	
         int var11 = par3World.getBlockId(par4, par5, par6);
 
         if (var11 == Block.snow.blockID)
@@ -76,8 +80,23 @@ public class ItemReed extends Item
                 Block var12 = Block.blocksList[this.spawnID];
                 int var13 = var12.onBlockPlaced(par3World, par4, par5, par6, par7, par8, par9, par10, 0);
 
-                if (par3World.setBlockAndMetadataWithNotify(par4, par5, par6, this.spawnID, var13))
+                // CraftBukkit start - This executes the placement of the block
+                CraftBlockState replacedBlockState = par3World.isRemote ? null : CraftBlockState.getBlockState(par3World, par4, par5, par6); // CraftBukkit
+                if (par3World.setBlockAndMetadata(par4, par5, par6, this.spawnID, var13))
                 {
+                	if(!par3World.isRemote) {
+	                	org.bukkit.event.block.BlockPlaceEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callBlockPlaceEvent(par3World, par2EntityPlayer, replacedBlockState, clickedX, clickedY, clickedZ);
+	
+	                    if (event.isCancelled() || !event.canBuild()) {
+	                        // CraftBukkit - undo; this only has reed, repeater and pie blocks
+	                        par3World.setBlockAndMetadata(par4, par5, par6, replacedBlockState.getTypeId(), replacedBlockState.getRawData());
+	
+	                        return true;
+	                    }
+                	}
+                    par3World.notifyBlocksOfNeighborChange(par4, par5, par6, this.spawnID);
+                    // CraftBukkit end
+                    
                     if (par3World.getBlockId(par4, par5, par6) == this.spawnID)
                     {
                         Block.blocksList[this.spawnID].onBlockPlacedBy(par3World, par4, par5, par6, par2EntityPlayer);

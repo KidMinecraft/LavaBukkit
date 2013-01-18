@@ -1,5 +1,8 @@
 package net.minecraft.inventory;
 
+import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.FurnaceExtractEvent;
+
 import cpw.mods.fml.common.registry.GameRegistry;
 import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.player.EntityPlayer;
@@ -7,6 +10,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.FurnaceRecipes;
 import net.minecraft.stats.AchievementList;
+import net.minecraft.tileentity.TileEntityFurnace;
 import net.minecraft.util.MathHelper;
 
 public class SlotFurnace extends Slot
@@ -87,6 +91,17 @@ public class SlotFurnace extends Slot
 
                 var2 = var4;
             }
+            
+            // CraftBukkit start
+            Player player = (Player) thePlayer.getBukkitEntity();
+            TileEntityFurnace furnace = ((TileEntityFurnace) this.inventory);
+            org.bukkit.block.Block block = furnace.worldObj.getWorld().getBlockAt(furnace.xCoord, furnace.yCoord, furnace.zCoord);
+
+            FurnaceExtractEvent event = new FurnaceExtractEvent(player, block, org.bukkit.Material.getMaterial(par1ItemStack.itemID), par1ItemStack.stackSize, var2);
+            thePlayer.worldObj.getServer().getPluginManager().callEvent(event);
+
+            var2 = event.getExpToDrop();
+            // CraftBukkit end
 
             while (var2 > 0)
             {

@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.logging.Formatter;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
+import java.util.regex.Pattern;
 
 final class ConsoleLogFormatter extends Formatter
 {
@@ -42,12 +43,12 @@ final class ConsoleLogFormatter extends Formatter
         {
             var2.append(" [SEVERE] ");
         }
-        else if (var3 == Level.SEVERE)
+        else //if (var3 == Level.SEVERE) // CraftBukkit
         {
             var2.append(" [").append(var3.getLocalizedName()).append("] ");
         }
 
-        var2.append(par1LogRecord.getMessage());
+        var2.append(formatMessage(par1LogRecord)); // CraftBukkit
         var2.append('\n');
         Throwable var4 = par1LogRecord.getThrown();
 

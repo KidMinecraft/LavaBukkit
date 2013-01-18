@@ -3,9 +3,13 @@ package net.minecraft.block;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import java.util.Random;
+
+import org.bukkit.event.entity.EntityDamageByBlockEvent;
+
 import net.minecraft.block.material.Material;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLiving;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.DamageSource;
 import net.minecraft.world.World;
@@ -162,6 +166,22 @@ public class BlockCactus extends Block implements IPlantable
      */
     public void onEntityCollidedWithBlock(World par1World, int par2, int par3, int par4, Entity par5Entity)
     {
+        // CraftBukkit start - EntityDamageByBlock event
+        if (!par1World.isRemote && par5Entity instanceof EntityLiving) {
+            org.bukkit.block.Block damager = par1World.getWorld().getBlockAt(par2, par3, par4);
+            org.bukkit.entity.Entity damagee = (par5Entity == null) ? null : par5Entity.getBukkitEntity();
+
+            EntityDamageByBlockEvent event = new EntityDamageByBlockEvent(damager, damagee, org.bukkit.event.entity.EntityDamageEvent.DamageCause.CONTACT, 1);
+            par1World.getServer().getPluginManager().callEvent(event);
+
+            if (!event.isCancelled()) {
+                damagee.setLastDamageCause(event);
+                par5Entity.attackEntityFrom(DamageSource.cactus, event.getDamage());
+            }
+            return;
+        }
+        // CraftBukkit end
+        
         par5Entity.attackEntityFrom(DamageSource.cactus, 1);
     }
 

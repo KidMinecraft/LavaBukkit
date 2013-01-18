@@ -56,6 +56,8 @@ public class FMLNetworkHandler
 
     public static void handlePacket250Packet(Packet250CustomPayload packet, INetworkManager network, NetHandler handler)
     {
+    	if(packet.length <= 0 || packet.data == null) return; // LavaBukkit
+    	
         String target = packet.channel;
 
         if (target.startsWith("MC|"))
@@ -178,14 +180,17 @@ public class FMLNetworkHandler
     private boolean handleVanillaLoginKick(NetLoginHandler netLoginHandler, MinecraftServer server, SocketAddress address, String userName)
     {
         // Vanilla reasons first
-        ServerConfigurationManager playerList = server.getConfigurationManager();
+        /*ServerConfigurationManager playerList = server.getConfigurationManager();
         String kickReason = playerList.allowUserToConnect(address, userName);
 
         if (kickReason != null)
         {
             netLoginHandler.completeConnection(kickReason);
         }
-        return kickReason == null;
+        return kickReason == null;*/
+    	
+    	// LavaBukkit: Was this code important? CB code should handle kicks now.
+    	return true;
     }
 
     public static void handleLoginPacketOnServer(NetLoginHandler handler, Packet1Login login)

@@ -52,6 +52,7 @@ public class BlockJukeBox extends BlockContainer
             if (var6 != null)
             {
                 var6.record = par5ItemStack.copy();
+                var6.record.stackSize = 1; // CraftBukkit - There can be only one
                 var6.onInventoryChanged();
                 par1World.setBlockMetadataWithNotify(par2, par3, par4, 1);
             }

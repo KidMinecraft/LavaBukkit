@@ -36,10 +36,11 @@ public class IntegratedPlayerList extends ServerConfigurationManager
     /**
      * checks ban-lists, then white-lists, then space for the server. Returns null on success, or an error message
      */
-    public String allowUserToConnect(SocketAddress par1SocketAddress, String par2Str)
+    // LavaBukkit - commented
+    /*public String allowUserToConnect(SocketAddress par1SocketAddress, String par2Str)
     {
         return par2Str.equalsIgnoreCase(this.getIntegratedServer().getServerOwner()) ? "That name is already taken." : super.allowUserToConnect(par1SocketAddress, par2Str);
-    }
+    }*/
 
     /**
      * get the associated Integrated Server

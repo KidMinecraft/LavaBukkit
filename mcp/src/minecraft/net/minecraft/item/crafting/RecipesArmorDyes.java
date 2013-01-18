@@ -10,8 +10,14 @@ import net.minecraft.item.ItemArmor;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 
-public class RecipesArmorDyes implements IRecipe
+public class RecipesArmorDyes extends ShapelessRecipes implements IRecipe // CraftBukkit - added extends
 {
+	// CraftBukkit start - delegate to new parent class with bogus info
+    public RecipesArmorDyes() {
+        super(new ItemStack(Item.helmetLeather, 0, 0), java.util.Arrays.asList(new ItemStack(Item.dyePowder, 0, 5)));
+    }
+    // CraftBukkit end
+    
     /**
      * Used to check if a recipe matches current crafting inventory
      */

@@ -104,6 +104,12 @@ public class EntityEnderCrystal extends Entity
         {
             if (!this.isDead && !this.worldObj.isRemote)
             {
+                // CraftBukkit start - All non-living entities need this
+                if (org.bukkit.craftbukkit.event.CraftEventFactory.handleNonLivingEntityDamageEvent(this, par1DamageSource, par2)) {
+                    return false;
+                }
+                // CraftBukkit end
+                
                 this.health = 0;
 
                 if (this.health <= 0)

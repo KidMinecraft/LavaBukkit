@@ -1,9 +1,11 @@
 package net.minecraft.block;
 
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import immibis.lavabukkit.nms.MCPBlockChangeDelegate;
+import immibis.lavabukkit.nms.NMSUtils;
+
 import java.util.List;
 import java.util.Random;
+
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
@@ -13,8 +15,15 @@ import net.minecraft.world.gen.feature.WorldGenHugeTrees;
 import net.minecraft.world.gen.feature.WorldGenTaiga2;
 import net.minecraft.world.gen.feature.WorldGenTrees;
 import net.minecraft.world.gen.feature.WorldGenerator;
-
 import net.minecraftforge.event.terraingen.TerrainGen;
+
+import org.bukkit.Location;
+import org.bukkit.TreeType;
+import org.bukkit.craftbukkit.util.StructureGrowDelegate;
+import org.bukkit.event.world.StructureGrowEvent;
+
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
 public class BlockSapling extends BlockFlower
 {
@@ -47,7 +56,7 @@ public class BlockSapling extends BlockFlower
                 }
                 else
                 {
-                    this.growTree(par1World, par2, par3, par4, par5Random);
+                    this.growTree(par1World, par2, par3, par4, par5Random, false, null, null); // CraftBukkit - added bonemeal, player and itemstack
                 }
             }
         }
@@ -176,4 +185,97 @@ public class BlockSapling extends BlockFlower
         par3List.add(new ItemStack(par1, 1, 2));
         par3List.add(new ItemStack(par1, 1, 3));
     }
+    
+    
+    
+	// CraftBukkit start - added bonemeal, player and itemstack
+    public void growTree(World world, int i, int j, int k, Random random, boolean bonemeal, org.bukkit.entity.Player player, ItemStack itemstack) {
+        int l = world.getBlockMetadata(i, j, k) & 3;
+        int i1 = 0;
+        int j1 = 0;
+        boolean flag = false;
+        StructureGrowDelegate delegate = new StructureGrowDelegate(world);
+        TreeType treeType = null;
+        TreeGenerator gen = null;
+        boolean grownTree = false;
+
+        if (l == 1) {
+            treeType = TreeType.REDWOOD;
+            gen = new WorldGenTaiga2(false);
+        } else if (l == 2) {
+            treeType = TreeType.BIRCH;
+            gen = new WorldGenForest(false);
+        } else if (l == 3) {
+            for (i1 = 0; i1 >= -1; --i1) {
+                for (j1 = 0; j1 >= -1; --j1) {
+                    if (this.isSameSapling(world, i + i1, j, k + j1, 3) && this.isSameSapling(world, i + i1 + 1, j, k + j1, 3) && this.isSameSapling(world, i + i1, j, k + j1 + 1, 3) && this.isSameSapling(world, i + i1 + 1, j, k + j1 + 1, 3)) {
+                        treeType = TreeType.JUNGLE;
+                        gen = new WorldGenHugeTrees(false, 10 + random.nextInt(20), 3, 3);
+                        flag = true;
+                        break;
+                    }
+                }
+
+                if (gen != null) {
+                    break;
+                }
+            }
+
+            if (gen == null) {
+                j1 = 0;
+                i1 = 0;
+                treeType = TreeType.SMALL_JUNGLE;
+                gen = new WorldGenTrees(false, 4 + random.nextInt(7), 3, 3, false);
+            }
+        } else {
+            treeType = TreeType.TREE;
+            gen = new WorldGenTrees(false);
+            if (random.nextInt(10) == 0) {
+                treeType = TreeType.BIG_TREE;
+                gen = new WorldGenBigTree(false);
+            }
+        }
+
+        if (flag) {
+            world.setBlock(i + i1, j, k + j1, 0);
+            world.setBlock(i + i1 + 1, j, k + j1, 0);
+            world.setBlock(i + i1, j, k + j1 + 1, 0);
+            world.setBlock(i + i1 + 1, j, k + j1 + 1, 0);
+        } else {
+            world.setBlock(i, j, k, 0);
+        }
+
+        grownTree = gen.generate(NMSUtils.createBCD(delegate), random, i + i1, j, k + j1);
+        if (grownTree) {
+            Location location = new Location(world.getWorld(), i, j, k);
+            StructureGrowEvent event = new StructureGrowEvent(location, treeType, bonemeal, player, delegate.getBlocks());
+            org.bukkit.Bukkit.getPluginManager().callEvent(event);
+            if (event.isCancelled()) {
+                grownTree = false;
+            } else {
+                for (org.bukkit.block.BlockState state : event.getBlocks()) {
+                    state.update(true);
+                }
+                if (event.isFromBonemeal() && itemstack != null) {
+                    --itemstack.stackSize;
+                }
+            }
+        }
+        if (!grownTree) {
+            if (flag) {
+                world.setBlockAndMetadata(i + i1, j, k + j1, this.blockID, l);
+                world.setBlockAndMetadata(i + i1 + 1, j, k + j1, this.blockID, l);
+                world.setBlockAndMetadata(i + i1, j, k + j1 + 1, this.blockID, l);
+                world.setBlockAndMetadata(i + i1 + 1, j, k + j1 + 1, this.blockID, l);
+            } else {
+                world.setBlockAndMetadata(i, j, k, this.blockID, l);
+            }
+        }
+    }
+    
+    public interface TreeGenerator {
+    	// LavaBukkit - changed BCD type
+        public boolean generate(MCPBlockChangeDelegate world, Random random, int i, int j, int k);
+    }
+    // CraftBukkit end
 }

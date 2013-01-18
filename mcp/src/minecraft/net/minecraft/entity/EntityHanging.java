@@ -2,7 +2,15 @@ package net.minecraft.entity;
 
 import java.util.Iterator;
 import java.util.List;
+
+import org.bukkit.entity.Hanging;
+import org.bukkit.entity.Painting;
+import org.bukkit.event.hanging.HangingBreakByEntityEvent;
+import org.bukkit.event.hanging.HangingBreakEvent;
+import org.bukkit.event.painting.PaintingBreakEvent;
+
 import net.minecraft.block.material.Material;
+import net.minecraft.entity.item.EntityPainting;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.DamageSource;
@@ -125,6 +133,33 @@ public abstract class EntityHanging extends Entity
 
             if (!this.isDead && !this.onValidSurface())
             {
+            	// CraftBukkit start
+                Material material = this.worldObj.getBlockMaterial((int) this.posX, (int) this.posY, (int) this.posZ);
+                HangingBreakEvent.RemoveCause cause;
+
+                if (!material.equals(Material.air)) {
+                    // TODO: This feels insufficient to catch 100% of suffocation cases
+                    cause = HangingBreakEvent.RemoveCause.OBSTRUCTION;
+                } else {
+                    cause = HangingBreakEvent.RemoveCause.PHYSICS;
+                }
+
+                HangingBreakEvent event = new HangingBreakEvent((Hanging) this.getBukkitEntity(), cause);
+                this.worldObj.getServer().getPluginManager().callEvent(event);
+
+                PaintingBreakEvent paintingEvent = null;
+                if (this instanceof EntityPainting) {
+                    // Fire old painting event until it can be removed
+                    paintingEvent = new PaintingBreakEvent((Painting) this.getBukkitEntity(), PaintingBreakEvent.RemoveCause.valueOf(cause.name()));
+                    paintingEvent.setCancelled(event.isCancelled());
+                    this.worldObj.getServer().getPluginManager().callEvent(paintingEvent);
+                }
+
+                if (isDead || event.isCancelled() || (paintingEvent != null && paintingEvent.isCancelled())) {
+                    return;
+                }
+                // CraftBukkit end
+                
                 this.setDead();
                 this.dropItemStack();
             }
@@ -237,6 +272,32 @@ public abstract class EntityHanging extends Entity
         {
             if (!this.isDead && !this.worldObj.isRemote)
             {
+            	// CraftBukkit start
+                HangingBreakEvent event = new HangingBreakEvent((Hanging) this.getBukkitEntity(), HangingBreakEvent.RemoveCause.DEFAULT);
+                PaintingBreakEvent paintingEvent = null;
+                if (par1DamageSource.getEntity() != null) {
+                    event = new HangingBreakByEntityEvent((Hanging) this.getBukkitEntity(), par1DamageSource.getEntity() == null ? null : par1DamageSource.getEntity().getBukkitEntity());
+
+                    if (this instanceof EntityPainting) {
+                        // Fire old painting event until it can be removed
+                        paintingEvent = new org.bukkit.event.painting.PaintingBreakByEntityEvent((Painting) this.getBukkitEntity(), par1DamageSource.getEntity() == null ? null : par1DamageSource.getEntity().getBukkitEntity());
+                    }
+                } else if (par1DamageSource == DamageSource.explosion || par1DamageSource == DamageSource.explosion2) {
+                    event = new HangingBreakEvent((Hanging) this.getBukkitEntity(), HangingBreakEvent.RemoveCause.EXPLOSION);
+                }
+
+                this.worldObj.getServer().getPluginManager().callEvent(event);
+
+                if (paintingEvent != null) {
+                    paintingEvent.setCancelled(event.isCancelled());
+                    this.worldObj.getServer().getPluginManager().callEvent(paintingEvent);
+                }
+
+                if (isDead || event.isCancelled() || (paintingEvent != null && paintingEvent.isCancelled())) {
+                    return true;
+                }
+                // CraftBukkit end
+                
                 this.setDead();
                 this.setBeenAttacked();
                 EntityPlayer var3 = null;
@@ -265,6 +326,8 @@ public abstract class EntityHanging extends Entity
     {
         if (!this.worldObj.isRemote && !this.isDead && par1 * par1 + par3 * par3 + par5 * par5 > 0.0D)
         {
+        	if (isDead) return; // CraftBukkit
+        	
             this.setDead();
             this.dropItemStack();
         }

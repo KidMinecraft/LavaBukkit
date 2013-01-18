@@ -1,6 +1,16 @@
 package net.minecraft.block;
 
+import immibis.lavabukkit.nms.NMSUtils;
+
+import java.util.ArrayList;
 import java.util.Random;
+
+import org.bukkit.Location;
+import org.bukkit.TreeType;
+import org.bukkit.block.BlockState;
+import org.bukkit.event.world.StructureGrowEvent;
+
+import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.feature.WorldGenBigMushroom;
 
@@ -136,4 +146,37 @@ public class BlockMushroom extends BlockFlower
             return false;
         }
     }
+    
+    // CraftBukkit start - added bonemeal, player and itemstack
+    public boolean fertilizeMushroom(World world, int i, int j, int k, Random random, boolean bonemeal, org.bukkit.entity.Player player, ItemStack itemstack) {
+        int l = world.getBlockMetadata(i, j, k);
+
+        world.setBlock(i, j, k, 0);
+        boolean grown = false;
+        StructureGrowEvent event = null;
+        Location location = new Location(world.getWorld(), i, j, k);
+        WorldGenBigMushroom worldgenhugemushroom = null;
+
+        if (this.blockID == Block.mushroomBrown.blockID) {
+            event = new StructureGrowEvent(location, TreeType.BROWN_MUSHROOM, bonemeal, player, new ArrayList<BlockState>());
+            worldgenhugemushroom = new WorldGenBigMushroom(0);
+        } else if (this.blockID == Block.mushroomRed.blockID) {
+            event = new StructureGrowEvent(location, TreeType.RED_MUSHROOM, bonemeal, player, new ArrayList<BlockState>());
+            worldgenhugemushroom = new WorldGenBigMushroom(1);
+        }
+
+        if (worldgenhugemushroom != null && event != null) {
+        	// LavaBukkit - change BCD type
+            grown = worldgenhugemushroom.generate(NMSUtils.createBCD(world), random, i, j, k, event, itemstack, world.getWorld());
+            if (event.isFromBonemeal() && itemstack != null) {
+                --itemstack.stackSize;
+            }
+        }
+        if (!grown || event.isCancelled()) {
+            world.setBlockAndMetadata(i, j, k, this.blockID, l);
+            return false;
+        }
+        return true;
+    }
+    // CraftBukkit end
 }

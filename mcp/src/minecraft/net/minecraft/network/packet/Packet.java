@@ -42,6 +42,14 @@ public abstract class Packet
      * separate them into a different send queue.
      */
     public boolean isChunkDataPacket = false;
+    
+    // CraftBukkit start - calculate packet ID once - used a bunch of times
+    private int packetID;
+
+    public Packet() {
+        packetID = ((Integer)packetClassToIdMap.get(this.getClass())).intValue();
+    }
+    // CraftBukkit end
 
     /**
      * Adds a two way mapping between the packet ID and packet class.
@@ -124,7 +132,7 @@ public abstract class Packet
      */
     public final int getPacketId()
     {
-        return ((Integer)packetClassToIdMap.get(this.getClass())).intValue();
+        return packetID; // ((Integer)packetClassToIdMap.get(this.getClass())).intValue(); // CraftBukkit
     }
 
     /**
@@ -172,6 +180,15 @@ public abstract class Packet
             System.out.println("Reached end of stream");
             return null;
         }
+        // CraftBukkit start
+        catch (java.net.SocketTimeoutException exception) {
+            System.out.println("Read timed out");
+            return null;
+        } catch (java.net.SocketException exception) {
+            System.out.println("Connection reset");
+            return null;
+        }
+        // CraftBukkit end
 
         PacketCount.countPacket(var8, (long)var4.getPacketSize());
         ++receivedID;
@@ -311,7 +328,7 @@ public abstract class Packet
      */
     public static void writeItemStack(ItemStack par0ItemStack, DataOutputStream par1DataOutputStream) throws IOException
     {
-        if (par0ItemStack == null)
+        if (par0ItemStack == null || par0ItemStack.getItem() == null) // CraftBukkit
         {
             par1DataOutputStream.writeShort(-1);
         }

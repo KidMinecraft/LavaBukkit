@@ -7,6 +7,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.WeakHashMap;
+
+import org.bukkit.event.block.BlockRedstoneEvent;
+
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
@@ -17,7 +21,7 @@ public class BlockRedstoneTorch extends BlockTorch
     private boolean torchActive = false;
 
     /** Map of ArrayLists of RedstoneUpdateInfo. Key of map is World. */
-    private static Map redstoneUpdateInfoCache = new HashMap();
+    private static Map redstoneUpdateInfoCache = new WeakHashMap(); // LavaBukkit; change to WeakHashMap
 
     /**
      * From the specified side and block metadata retrieves the blocks texture. Args: side, metadata
@@ -153,11 +157,29 @@ public class BlockRedstoneTorch extends BlockTorch
         {
             var7.remove(0);
         }
+        
+        // CraftBukkit start
+        org.bukkit.plugin.PluginManager manager = par1World.getServer().getPluginManager();
+        org.bukkit.block.Block block = par1World.getWorld().getBlockAt(par2, par3, par4);
+        int oldCurrent = this.torchActive ? 15 : 0;
+
+        BlockRedstoneEvent event = new BlockRedstoneEvent(block, oldCurrent, oldCurrent);
+        // CraftBukkit end
 
         if (this.torchActive)
         {
             if (var6)
             {
+                // CraftBukkit start
+                if (oldCurrent != 0) {
+                    event.setNewCurrent(0);
+                    manager.callEvent(event);
+                    if (event.getNewCurrent() != 0) {
+                        return;
+                    }
+                }
+                // CraftBukkit end
+                
                 par1World.setBlockAndMetadataWithNotify(par2, par3, par4, Block.torchRedstoneIdle.blockID, par1World.getBlockMetadata(par2, par3, par4));
 
                 if (this.checkForBurnout(par1World, par2, par3, par4, true))
@@ -176,6 +198,16 @@ public class BlockRedstoneTorch extends BlockTorch
         }
         else if (!var6 && !this.checkForBurnout(par1World, par2, par3, par4, false))
         {
+            // CraftBukkit start
+            if (oldCurrent != 15) {
+                event.setNewCurrent(15);
+                manager.callEvent(event);
+                if (event.getNewCurrent() != 15) {
+                    return;
+                }
+            }
+            // CraftBukkit end
+            
             par1World.setBlockAndMetadataWithNotify(par2, par3, par4, Block.torchRedstoneActive.blockID, par1World.getBlockMetadata(par2, par3, par4));
         }
     }

@@ -1,6 +1,10 @@
 package net.minecraft.block;
 
 import java.util.Random;
+
+import org.bukkit.craftbukkit.event.CraftEventFactory;
+import org.bukkit.event.block.BlockIgniteEvent;
+
 import net.minecraft.block.material.Material;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
@@ -60,6 +64,11 @@ public class BlockStationary extends BlockFluid
             int var6 = par5Random.nextInt(3);
             int var7;
             int var8;
+            
+            // CraftBukkit start - prevent lava putting something on fire
+            org.bukkit.World bworld = par1World.getWorld();
+            BlockIgniteEvent.IgniteCause igniteCause = BlockIgniteEvent.IgniteCause.LAVA;
+            // CraftBukkit end
 
             for (var7 = 0; var7 < var6; ++var7)
             {
@@ -72,6 +81,15 @@ public class BlockStationary extends BlockFluid
                 {
                     if (this.isFlammable(par1World, par2 - 1, par3, par4) || this.isFlammable(par1World, par2 + 1, par3, par4) || this.isFlammable(par1World, par2, par3, par4 - 1) || this.isFlammable(par1World, par2, par3, par4 + 1) || this.isFlammable(par1World, par2, par3 - 1, par4) || this.isFlammable(par1World, par2, par3 + 1, par4))
                     {
+                    	// CraftBukkit start - prevent lava putting something on fire
+                        org.bukkit.block.Block block = bworld.getBlockAt(par2, par3, par4);
+                        if (block.getTypeId() != Block.fire.blockID) {
+                            if (CraftEventFactory.callEvent(new BlockIgniteEvent(block, igniteCause, null)).isCancelled()) {
+                                return; // LavaBukkit fix (was continue); fire shouldn't go through things that aren't allowed to burn
+                            }
+                        }
+                        // CraftBukkit end
+                        
                         par1World.setBlockWithNotify(par2, par3, par4, Block.fire.blockID);
                         return;
                     }
@@ -94,6 +112,15 @@ public class BlockStationary extends BlockFluid
 
                     if (par1World.isAirBlock(par2, par3 + 1, par4) && this.isFlammable(par1World, par2, par3, par4))
                     {
+                        // CraftBukkit start - prevent lava putting something on fire
+                        org.bukkit.block.Block block = bworld.getBlockAt(par2, par3 + 1, par4);
+                        if (block.getTypeId() != Block.fire.blockID) {
+                            if (CraftEventFactory.callEvent(new BlockIgniteEvent(block, igniteCause, null)).isCancelled()) {
+                                continue;
+                            }
+                        }
+                        // CraftBukkit end
+                        
                         par1World.setBlockWithNotify(par2, par3 + 1, par4, Block.fire.blockID);
                     }
                 }

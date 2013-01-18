@@ -3,6 +3,9 @@ package net.minecraft.item;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import java.util.List;
+
+import org.bukkit.craftbukkit.block.CraftBlockState;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockSkull;
 import net.minecraft.creativetab.CreativeTabs;
@@ -42,6 +45,8 @@ public class ItemSkull extends Item
         }
         else
         {
+        	int clickedX = par4, clickedY = par5, clickedZ = par6; // CraftBukkit
+        	
             if (par7 == 1)
             {
                 ++par5;
@@ -77,6 +82,8 @@ public class ItemSkull extends Item
             }
             else
             {
+            	CraftBlockState blockState = par3World.isRemote ? null : CraftBlockState.getBlockState(par3World, par4, par5, par6); // CraftBukkit
+            	
                 par3World.setBlockAndMetadataWithNotify(par4, par5, par6, Block.skull.blockID, par7);
                 int var11 = 0;
 
@@ -100,6 +107,17 @@ public class ItemSkull extends Item
                     ((TileEntitySkull)var12).setSkullRotation(var11);
                     ((BlockSkull)Block.skull).makeWither(par3World, par4, par5, par6, (TileEntitySkull)var12);
                 }
+                
+                // CraftBukkit start
+                if(!par3World.isRemote) {
+	                org.bukkit.event.block.BlockPlaceEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callBlockPlaceEvent(par3World, par2EntityPlayer, blockState, clickedX, clickedY, clickedZ);
+	
+	                if (event.isCancelled() || !event.canBuild()) {
+	                    event.getBlockPlaced().setTypeIdAndData(blockState.getTypeId(), blockState.getRawData(), false);
+	                    return false;
+	                }
+                }
+                // CraftBukkit end
 
                 --par1ItemStack.stackSize;
                 return true;

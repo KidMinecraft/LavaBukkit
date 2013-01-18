@@ -157,7 +157,8 @@ public class EntityWolf extends EntityTameable
      */
     protected boolean canDespawn()
     {
-        return this.isAngry();
+    	// CraftBukkit - added && !this.isTamed()
+        return this.isAngry() && !this.isTamed();
     }
 
     /**
@@ -432,7 +433,8 @@ public class EntityWolf extends EntityTameable
 
             if (!this.worldObj.isRemote)
             {
-                if (this.rand.nextInt(3) == 0)
+            	// CraftBukkit - added event call and isCancelled check.
+                if (this.rand.nextInt(3) == 0 && !org.bukkit.craftbukkit.event.CraftEventFactory.callEntityTameEvent(this, par1EntityPlayer).isCancelled())
                 {
                     this.setTamed(true);
                     this.setPathToEntity((PathEntity)null);

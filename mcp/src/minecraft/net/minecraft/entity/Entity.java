@@ -1,8 +1,5 @@
 package net.minecraft.entity;
 
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -21,7 +18,9 @@ import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.item.EntityItemFrame;
 import net.minecraft.entity.item.EntityMinecart;
 import net.minecraft.entity.item.EntityPainting;
+import net.minecraft.entity.passive.EntityTameable;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -40,6 +39,19 @@ import net.minecraft.util.Vec3;
 import net.minecraft.world.Explosion;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
+
+import org.bukkit.Bukkit;
+import org.bukkit.block.BlockFace;
+import org.bukkit.craftbukkit.entity.CraftPlayer;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Vehicle;
+import org.bukkit.event.vehicle.VehicleBlockCollisionEvent;
+import org.bukkit.event.vehicle.VehicleEnterEvent;
+import org.bukkit.event.vehicle.VehicleExitEvent;
+import org.bukkit.plugin.PluginManager;
+
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
 public abstract class Entity
 {
@@ -178,7 +190,7 @@ public abstract class Entity
      * The amount of ticks you have to stand inside of fire before be set on fire
      */
     public int fireResistance;
-    private int fire;
+    public int fire; // CraftBukkit; private -> public
 
     /**
      * Whether this entity is currently inside of water (if it handles water movement that is)
@@ -237,7 +249,16 @@ public abstract class Entity
     public boolean captureDrops = false;
     public ArrayList<EntityItem> capturedDrops = new ArrayList<EntityItem>();
     private UUID persistentID;
+    
+    // CraftBukkit start
+    public boolean valid = false;
 
+    public static final int CURRENT_LEVEL = 2;
+    static boolean isLevelAtLeast(NBTTagCompound tag, int level) {
+        return tag.hasKey("Bukkit.updateLevel") && tag.getInteger("Bukkit.updateLevel") >= level;
+    }
+    // CraftBukkit end
+    
     public Entity(World par1World)
     {
         this.entityId = nextEntityID++;
@@ -379,6 +400,25 @@ public abstract class Entity
      */
     protected void setRotation(float par1, float par2)
     {
+    	// CraftBukkit start - yaw was sometimes set to NaN, so we need to set it back to 0
+        if (Float.isNaN(par1) || Float.isInfinite(par1)) {
+        	if (this instanceof EntityPlayerMP) {
+                System.err.println(((CraftPlayer) this.getBukkitEntity()).getName() + " was caught trying to crash the server with an invalid yaw");
+                ((CraftPlayer) this.getBukkitEntity()).kickPlayer("Nope");
+            }
+            par1 = 0;
+        }
+
+        // pitch was sometimes set to NaN, so we need to set it back to 0.
+        if (Float.isNaN(par2) || Float.isInfinite(par2)) {
+        	if (this instanceof EntityPlayerMP) {
+                System.err.println(((CraftPlayer) this.getBukkitEntity()).getName() + " was caught trying to crash the server with an invalid pitch");
+                ((CraftPlayer) this.getBukkitEntity()).kickPlayer("Nope");
+            }
+            par2 = 0;
+        }
+        // CraftBukkit end
+        
         this.rotationYaw = par1 % 360.0F;
         this.rotationPitch = par2 % 360.0F;
     }
@@ -459,7 +499,7 @@ public abstract class Entity
 
             if (this.inPortal)
             {
-                if (var1.getAllowNether())
+                //if (var1.getAllowNether()) // CraftBukkit; commented
                 {
                     if (this.ridingEntity == null && this.field_82153_h++ >= var2)
                     {
@@ -905,6 +945,26 @@ public abstract class Entity
             var36 = this.posX - var7;
             var25 = this.posY - var9;
             var27 = this.posZ - var11;
+            
+            // CraftBukkit start
+            if (!worldObj.isRemote && (this.isCollidedHorizontally) && (this.getBukkitEntity() instanceof Vehicle)) {
+                Vehicle vehicle = (Vehicle) this.getBukkitEntity();
+                org.bukkit.block.Block block = this.worldObj.getWorld().getBlockAt(MathHelper.floor_double(this.posX), MathHelper.floor_double(this.posY - (double) this.height), MathHelper.floor_double(this.posZ));
+
+                if (var13 > par1) {
+                    block = block.getRelative(BlockFace.EAST);
+                } else if (var13 < par1) {
+                    block = block.getRelative(BlockFace.WEST);
+                } else if (var17 > par5) {
+                    block = block.getRelative(BlockFace.SOUTH);
+                } else if (var17 < par5) {
+                    block = block.getRelative(BlockFace.NORTH);
+                }
+
+                VehicleBlockCollisionEvent event = new VehicleBlockCollisionEvent(vehicle, block);
+                this.worldObj.getServer().getPluginManager().callEvent(event);
+            }
+            // CraftBukkit end
 
             if (this.canTriggerWalking() && !var20 && this.ridingEntity == null)
             {
@@ -1126,9 +1186,9 @@ public abstract class Entity
      */
     public boolean handleWaterMovement()
     {
-        if (this.worldObj.handleMaterialAcceleration(this.boundingBox.expand(0.0D, -0.4000000059604645D, 0.0D).contract(0.001D, 0.001D, 0.001D), Material.water, this))
+    	if (this.worldObj.handleMaterialAcceleration(this.boundingBox.expand(0.0D, -0.4000000059604645D, 0.0D).contract(0.001D, 0.001D, 0.001D), Material.water, this))
         {
-            if (!this.inWater && !this.firstUpdate)
+        	if (!this.inWater && !this.firstUpdate)
             {
                 float var1 = MathHelper.sqrt_double(this.motionX * this.motionX * 0.20000000298023224D + this.motionY * this.motionY + this.motionZ * this.motionZ * 0.20000000298023224D) * 0.2F;
 
@@ -1157,16 +1217,16 @@ public abstract class Entity
                     this.worldObj.spawnParticle("splash", this.posX + (double)var4, (double)(var2 + 1.0F), this.posZ + (double)var5, this.motionX, this.motionY, this.motionZ);
                 }
             }
-
+            
             this.fallDistance = 0.0F;
             this.inWater = true;
             this.fire = 0;
         }
         else
         {
-            this.inWater = false;
+        	this.inWater = false;
         }
-
+        
         return this.inWater;
     }
 
@@ -1374,6 +1434,8 @@ public abstract class Entity
     {
         if (par1Entity.riddenByEntity != this && par1Entity.ridingEntity != this)
         {
+        	
+            
             double var2 = par1Entity.posX - this.posX;
             double var4 = par1Entity.posZ - this.posZ;
             double var6 = MathHelper.abs_max(var2, var4);
@@ -1566,6 +1628,7 @@ public abstract class Entity
             this.motionY = ((NBTTagDouble)var6.tagAt(1)).data;
             this.motionZ = ((NBTTagDouble)var6.tagAt(2)).data;
 
+            /* CraftBukkit start - moved section down
             if (Math.abs(this.motionX) > 10.0D)
             {
                 this.motionX = 0.0D;
@@ -1579,7 +1642,7 @@ public abstract class Entity
             if (Math.abs(this.motionZ) > 10.0D)
             {
                 this.motionZ = 0.0D;
-            }
+            }*/
 
             this.prevPosX = this.lastTickPosX = this.posX = ((NBTTagDouble)var2.tagAt(0)).data;
             this.prevPosY = this.lastTickPosY = this.posY = ((NBTTagDouble)var2.tagAt(1)).data;
@@ -1604,6 +1667,31 @@ public abstract class Entity
                 persistentID = new UUID(par1NBTTagCompound.getLong("PersistentIDMSB"), par1NBTTagCompound.getLong("PersistentIDLSB"));
             }
             this.readEntityFromNBT(par1NBTTagCompound);
+            
+            // CraftBukkit start
+            // Reset the persistence for tamed animals
+            if (this instanceof EntityTameable && !isLevelAtLeast(par1NBTTagCompound, 2) && !par1NBTTagCompound.getBoolean("PersistenceRequired")) {
+                ((EntityLiving)this).persistenceRequired = !((EntityLiving)this).canDespawn();
+            }
+            // CraftBukkit end
+            
+            // CraftBukkit start - exempt vehicles from notch's sanity check
+            if(!(this.getBukkitEntity() instanceof Vehicle)) {
+	            if (Math.abs(this.motionX) > 10.0D)
+	            {
+	                this.motionX = 0.0D;
+	            }
+	
+	            if (Math.abs(this.motionY) > 10.0D)
+	            {
+	                this.motionY = 0.0D;
+	            }
+	
+	            if (Math.abs(this.motionZ) > 10.0D)
+	            {
+	                this.motionZ = 0.0D;
+	            }
+            } // CraftBukkit end
         }
         catch (Throwable var5)
         {
@@ -1862,6 +1950,11 @@ public abstract class Entity
      */
     public void mountEntity(Entity par1Entity)
     {
+    	// CraftBukkit start
+    	PluginManager pm = worldObj.isRemote ? null : Bukkit.getPluginManager();
+    	if(!worldObj.isRemote) this.getBukkitEntity(); // make sure bukkitEntity is initialized
+    	// CraftBukkit end
+    	
         this.entityRiderPitchDelta = 0.0D;
         this.entityRiderYawDelta = 0.0D;
 
@@ -1869,6 +1962,13 @@ public abstract class Entity
         {
             if (this.ridingEntity != null)
             {
+                // CraftBukkit start
+                if (!worldObj.isRemote && (this.bukkitEntity instanceof LivingEntity) && (this.ridingEntity.getBukkitEntity() instanceof Vehicle)) {
+                    VehicleExitEvent event = new VehicleExitEvent((Vehicle) this.ridingEntity.getBukkitEntity(), (LivingEntity) this.bukkitEntity);
+                    pm.callEvent(event);
+                }
+                // CraftBukkit end
+                
                 this.setLocationAndAngles(this.ridingEntity.posX, this.ridingEntity.boundingBox.minY + (double)this.ridingEntity.height, this.ridingEntity.posZ, this.rotationYaw, this.rotationPitch);
                 this.ridingEntity.riddenByEntity = null;
             }
@@ -1877,12 +1977,30 @@ public abstract class Entity
         }
         else if (this.ridingEntity == par1Entity)
         {
+            // CraftBukkit start
+            if (!worldObj.isRemote && (this.bukkitEntity instanceof LivingEntity) && (this.ridingEntity.getBukkitEntity() instanceof Vehicle)) {
+                VehicleExitEvent event = new VehicleExitEvent((Vehicle) this.ridingEntity.getBukkitEntity(), (LivingEntity) this.bukkitEntity);
+                pm.callEvent(event);
+            }
+            // CraftBukkit end
+            
             this.unmountEntity(par1Entity);
             this.ridingEntity.riddenByEntity = null;
             this.ridingEntity = null;
         }
         else
         {
+            // CraftBukkit start
+            if (!worldObj.isRemote && (this.bukkitEntity instanceof LivingEntity) && (par1Entity.getBukkitEntity() instanceof Vehicle)) {
+                VehicleEnterEvent event = new VehicleEnterEvent((Vehicle) par1Entity.getBukkitEntity(), this.bukkitEntity);
+                pm.callEvent(event);
+
+                if (event.isCancelled()) {
+                    return;
+                }
+            }
+            // CraftBukkit end
+            
             if (this.ridingEntity != null)
             {
                 this.ridingEntity.riddenByEntity = null;
@@ -1897,6 +2015,19 @@ public abstract class Entity
             par1Entity.riddenByEntity = this;
         }
     }
+    
+    // CraftBukkit start
+    protected org.bukkit.entity.Entity bukkitEntity;
+
+    public org.bukkit.entity.Entity getBukkitEntity() {
+    	if(worldObj.isRemote)
+    		throw new IllegalStateException("This is the client!");
+        if (this.bukkitEntity == null) {
+            this.bukkitEntity = org.bukkit.craftbukkit.entity.CraftEntity.getEntity(this.worldObj.getServer(), this);
+        }
+        return this.bukkitEntity;
+    }
+    // CraftBukkit end
 
     /**
      * Called when a player unounts an entity.

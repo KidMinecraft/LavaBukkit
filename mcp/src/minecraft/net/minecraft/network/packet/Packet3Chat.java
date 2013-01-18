@@ -27,10 +27,12 @@ public class Packet3Chat extends Packet
     {
         this.isServer = true;
 
+        /* CraftBukkit start - handle this later
         if (par1Str.length() > maxChatLength)
         {
             par1Str = par1Str.substring(0, maxChatLength);
         }
+        // CraftBukkit end */
 
         this.message = par1Str;
         this.isServer = par2;

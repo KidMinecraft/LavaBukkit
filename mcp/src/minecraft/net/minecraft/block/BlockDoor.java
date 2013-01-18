@@ -3,6 +3,9 @@ package net.minecraft.block;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import java.util.Random;
+
+import org.bukkit.event.block.BlockRedstoneEvent;
+
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
@@ -355,15 +358,24 @@ public class BlockDoor extends Block
                 {
                     this.dropBlockAsItem(par1World, par2, par3, par4, var6, 0);
                 }
-            }
-            else
-            {
-                boolean var8 = par1World.isBlockIndirectlyGettingPowered(par2, par3, par4) || par1World.isBlockIndirectlyGettingPowered(par2, par3 + 1, par4);
-
-                if ((var8 || par5 > 0 && Block.blocksList[par5].canProvidePower()) && par5 != this.blockID)
-                {
-                    this.onPoweredBlockChange(par1World, par2, par3, par4, var8);
-                }
+            // CraftBukkit start
+	        } else if (!par1World.isRemote && par5 > 0 && Block.blocksList[par5].canProvidePower()) {
+	            org.bukkit.World bworld = par1World.getWorld();
+	            org.bukkit.block.Block block = bworld.getBlockAt(par2, par3, par4);
+	            org.bukkit.block.Block blockTop = bworld.getBlockAt(par2, par3 + 1, par4);
+	
+	            int power = block.getBlockPower();
+	            int powerTop = blockTop.getBlockPower();
+	            if (powerTop > power) power = powerTop;
+	            int oldPower = (par1World.getBlockMetadata(par2, par3, par4) & 4) > 0 ? 15 : 0;
+	
+	            if (oldPower == 0 ^ power == 0) {
+	                BlockRedstoneEvent eventRedstone = new BlockRedstoneEvent(block, oldPower, power);
+	                par1World.getServer().getPluginManager().callEvent(eventRedstone);
+	
+	                this.onPoweredBlockChange(par1World, par2, par3, par4, eventRedstone.getNewCurrent() > 0);
+	            }
+	            // CraftBukkit end
             }
         }
         else
@@ -372,7 +384,7 @@ public class BlockDoor extends Block
             {
                 par1World.setBlockWithNotify(par2, par3, par4, 0);
             }
-
+            else // CraftBukkit
             if (par5 > 0 && par5 != this.blockID)
             {
                 this.onNeighborBlockChange(par1World, par2, par3 - 1, par4, par5);

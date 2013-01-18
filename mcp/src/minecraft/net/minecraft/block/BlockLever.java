@@ -1,5 +1,7 @@
 package net.minecraft.block;
 
+import org.bukkit.event.block.BlockRedstoneEvent;
+
 import net.minecraft.block.material.Material;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.player.EntityPlayer;
@@ -280,6 +282,22 @@ public class BlockLever extends Block
             int var10 = par1World.getBlockMetadata(par2, par3, par4);
             int var11 = var10 & 7;
             int var12 = 8 - (var10 & 8);
+            
+            // CraftBukkit start - Interact Lever
+            if(!par1World.isRemote) {
+	            org.bukkit.block.Block block = par1World.getWorld().getBlockAt(par2, par3, par4);
+	            int old = (var12 != 8) ? 1 : 0;
+	            int current = (var12 == 8) ? 1 : 0;
+	
+	            BlockRedstoneEvent eventRedstone = new BlockRedstoneEvent(block, old, current);
+	            par1World.getServer().getPluginManager().callEvent(eventRedstone);
+	
+	            if ((eventRedstone.getNewCurrent() > 0) != (var12 == 8)) {
+	                return true;
+	            }
+            }
+            // CraftBukkit end
+            
             par1World.setBlockMetadataWithNotify(par2, par3, par4, var11 + var12);
             par1World.markBlockRangeForRenderUpdate(par2, par3, par4, par2, par3, par4);
             par1World.playSoundEffect((double)par2 + 0.5D, (double)par3 + 0.5D, (double)par4 + 0.5D, "random.click", 0.3F, var12 > 0 ? 0.6F : 0.5F);

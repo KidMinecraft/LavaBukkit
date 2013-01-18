@@ -1,10 +1,14 @@
 package net.minecraft.world.gen.feature;
 
+import immibis.lavabukkit.nms.MCPBlockChangeDelegate;
+import immibis.lavabukkit.nms.NMSUtils;
+
 import java.util.Random;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockSapling.TreeGenerator;
 import net.minecraft.world.World;
 
-public class WorldGenShrub extends WorldGenerator
+public class WorldGenShrub extends WorldGenerator implements TreeGenerator // CraftBukkit add interface
 {
     private int field_76527_a;
     private int field_76526_b;
@@ -15,7 +19,8 @@ public class WorldGenShrub extends WorldGenerator
         this.field_76527_a = par2;
     }
 
-    public boolean generate(World par1World, Random par2Random, int par3, int par4, int par5)
+    // CraftBukkit change signature
+    public boolean generate(MCPBlockChangeDelegate par1World, Random par2Random, int par3, int par4, int par5)
     {
         int var15;
 
@@ -23,7 +28,8 @@ public class WorldGenShrub extends WorldGenerator
         do 
         {
             block = Block.blocksList[par1World.getBlockId(par3,  par4, par5)];
-            if (block != null && !block.isLeaves(par1World, par3, par4, par5))
+            // LavaBukkit fix MCPBCD call
+            if (block != null && !par1World.isLeaves(block, par3, par4, par5))
             {
                 break;
             }
@@ -52,8 +58,9 @@ public class WorldGenShrub extends WorldGenerator
 
                         block = Block.blocksList[par1World.getBlockId(var11, var8, var13)];
 
-                        if ((Math.abs(var12) != var10 || Math.abs(var14) != var10 || par2Random.nextInt(2) != 0) && 
-                            (block == null || block.canBeReplacedByLeaves(par1World, var11, var8, var13)))
+                        if ((Math.abs(var12) != var10 || Math.abs(var14) != var10 || par2Random.nextInt(2) != 0) &&
+                        	// LavaBukkit fix MCPBCD call
+                            (block == null || par1World.canBeReplacedByLeaves(block, var11, var8, var13)))
                         {
                             this.setBlockAndMetadata(par1World, var11, var8, var13, Block.leaves.blockID, this.field_76527_a);
                         }
@@ -64,4 +71,7 @@ public class WorldGenShrub extends WorldGenerator
 
         return true;
     }
+    
+    // CraftBukkit
+	@Override public boolean generate(World var1, Random var2, int var3, int var4, int var5) {return generate(NMSUtils.createBCD(var1),var2,var3,var4,var5);}
 }

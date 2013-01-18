@@ -5,6 +5,10 @@ import java.io.InputStreamReader;
 import java.math.BigInteger;
 import java.net.URL;
 import java.net.URLEncoder;
+
+import org.bukkit.craftbukkit.CraftServer;
+import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
+
 import net.minecraft.util.CryptManager;
 
 class ThreadLoginVerifier extends Thread
@@ -12,8 +16,12 @@ class ThreadLoginVerifier extends Thread
     /** The login handler that spawned this thread. */
     final NetLoginHandler loginHandler;
 
-    ThreadLoginVerifier(NetLoginHandler par1NetLoginHandler)
+    // CraftBukkit start
+    CraftServer server;
+    ThreadLoginVerifier(NetLoginHandler par1NetLoginHandler, CraftServer server)
     {
+    	this.server = server;
+    	// CraftBukkit end
         this.loginHandler = par1NetLoginHandler;
     }
 
@@ -32,13 +40,30 @@ class ThreadLoginVerifier extends Thread
                 this.loginHandler.raiseErrorAndDisconnect("Failed to verify username!");
                 return;
             }
+            
+            // CraftBukkit start
+            if (this.loginHandler.getSocket() == null) {
+                return;
+            }
+
+            AsyncPlayerPreLoginEvent asyncEvent = new AsyncPlayerPreLoginEvent(NetLoginHandler.getClientUsername(this.loginHandler), this.loginHandler.getSocket().getInetAddress());
+            this.server.getPluginManager().callEvent(asyncEvent);
+
+            // LavaBukkit: removed deprecated PlayerPreLoginEvent
+            if (asyncEvent.getLoginResult() != AsyncPlayerPreLoginEvent.Result.ALLOWED) {
+                this.loginHandler.raiseErrorAndDisconnect(asyncEvent.getKickMessage());
+                return;
+            }
+            // CraftBukkit end
 
             NetLoginHandler.func_72531_a(this.loginHandler, true);
-        }
-        catch (Exception var5)
-        {
-            this.loginHandler.raiseErrorAndDisconnect("Failed to verify username! [internal error " + var5 + "]");
-            var5.printStackTrace();
+            // CraftBukkit start
+        } catch (java.io.IOException exception) {
+            this.loginHandler.raiseErrorAndDisconnect("Failed to verify username, session authentication server unavailable!");
+        } catch (Exception exception) {
+            this.loginHandler.raiseErrorAndDisconnect("Failed to verify username!");
+            server.getLogger().log(java.util.logging.Level.WARNING, "Exception verifying " + NetLoginHandler.getClientUsername(this.loginHandler), exception);
+            // CraftBukkit end
         }
     }
 }

@@ -4,6 +4,13 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import java.util.Iterator;
 import java.util.List;
+
+import org.bukkit.block.BlockState;
+import org.bukkit.craftbukkit.util.BlockStateListPopulator;
+import org.bukkit.event.entity.EntityCreatePortalEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.EntityRegainHealthEvent;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockEndPortal;
 import net.minecraft.entity.Entity;
@@ -12,6 +19,8 @@ import net.minecraft.entity.IEntityMultiPart;
 import net.minecraft.entity.item.EntityEnderCrystal;
 import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.network.packet.Packet53BlockChange;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.MathHelper;
@@ -401,7 +410,16 @@ public class EntityDragon extends EntityLiving implements IBossDisplayData, IEnt
             }
             else if (this.ticksExisted % 10 == 0 && this.health < this.getMaxHealth())
             {
-                ++this.health;
+            	// CraftBukkit start
+            	if(!worldObj.isRemote) {
+	                EntityRegainHealthEvent event = new EntityRegainHealthEvent(this.getBukkitEntity(), 1, EntityRegainHealthEvent.RegainReason.ENDER_CRYSTAL);
+	                this.worldObj.getServer().getPluginManager().callEvent(event);
+	
+	                if (!event.isCancelled()) {
+	                    this.health += event.getAmount();
+	                }
+            	}
+                // CraftBukkit end
             }
         }
 
@@ -522,6 +540,11 @@ public class EntityDragon extends EntityLiving implements IBossDisplayData, IEnt
         int var7 = MathHelper.floor_double(par1AxisAlignedBB.maxZ);
         boolean var8 = false;
         boolean var9 = false;
+        
+        // CraftBukkit start - create a list to hold all the destroyed blocks
+        List<org.bukkit.block.Block> destroyedBlocks = new java.util.ArrayList<org.bukkit.block.Block>();
+        org.bukkit.craftbukkit.CraftWorld craftWorld = this.worldObj.getWorld();
+        // CraftBukkit end
 
         for (int var10 = var2; var10 <= var5; ++var10)
         {
@@ -537,7 +560,10 @@ public class EntityDragon extends EntityLiving implements IBossDisplayData, IEnt
                         if (block.canDragonDestroy(worldObj, var10, var11, var12))
                         {
                             var9 = true;
-                            this.worldObj.setBlockWithNotify(var10, var11, var12, 0);
+                            // CraftBukkit start - add blocks to list rather than destroying them
+                            // this.worldObj.setBlockWithNotify(var10, var11, var12, 0);
+                            destroyedBlocks.add(craftWorld.getBlockAt(var10, var11, var12));
+                            // CraftBukkit end
                         }
                         else
                         {
@@ -550,6 +576,21 @@ public class EntityDragon extends EntityLiving implements IBossDisplayData, IEnt
 
         if (var9)
         {
+        	// CraftBukkit start - set off an EntityExplodeEvent for the dragon exploding all these blocks
+            org.bukkit.entity.Entity bukkitEntity = this.getBukkitEntity();
+            EntityExplodeEvent event = new EntityExplodeEvent(bukkitEntity, bukkitEntity.getLocation(), destroyedBlocks, 0F);
+            worldObj.getServer().getPluginManager().callEvent(event);
+            if (event.isCancelled()) {
+                // this flag literally means 'Dragon hit something hard' (Obsidian, White Stone or Bedrock) and will cause the dragon to slow down.
+                // We should consider adding an event extension for it, or perhaps returning true if the event is cancelled.
+                return var8;
+            } else {
+                for (org.bukkit.block.Block block : event.blockList()) {
+                    craftWorld.explodeBlock(block, event.getYield());
+                }
+            }
+            // CraftBukkit end
+            
             double var16 = par1AxisAlignedBB.minX + (par1AxisAlignedBB.maxX - par1AxisAlignedBB.minX) * (double)this.rand.nextFloat();
             double var17 = par1AxisAlignedBB.minY + (par1AxisAlignedBB.maxY - par1AxisAlignedBB.minY) * (double)this.rand.nextFloat();
             double var14 = par1AxisAlignedBB.minZ + (par1AxisAlignedBB.maxZ - par1AxisAlignedBB.minZ) * (double)this.rand.nextFloat();
@@ -590,7 +631,8 @@ public class EntityDragon extends EntityLiving implements IBossDisplayData, IEnt
         return false;
     }
 
-    protected boolean func_82195_e(DamageSource par1DamageSource, int par2)
+    // CraftBukkit - protected -> public. CB name: dealDamage
+    public boolean func_82195_e(DamageSource par1DamageSource, int par2)
     {
         return super.attackEntityFrom(par1DamageSource, par2);
     }
@@ -617,7 +659,7 @@ public class EntityDragon extends EntityLiving implements IBossDisplayData, IEnt
         {
             if (this.deathTicks > 150 && this.deathTicks % 5 == 0)
             {
-                var4 = 1000;
+                var4 = expToDrop / 12; // CraftBukkit - drop experience as dragon falls from sky. use experience drop from death event. This is now set in getExpReward()
 
                 while (var4 > 0)
                 {
@@ -638,8 +680,8 @@ public class EntityDragon extends EntityLiving implements IBossDisplayData, IEnt
 
         if (this.deathTicks == 200 && !this.worldObj.isRemote)
         {
-            var4 = 2000;
-
+            var4 = expToDrop - 10 * (expToDrop / 12); // CraftBukkit - drop the remaining experience
+            
             while (var4 > 0)
             {
                 var5 = EntityXPOrb.getXPSplit(var4);
@@ -660,6 +702,9 @@ public class EntityDragon extends EntityLiving implements IBossDisplayData, IEnt
         byte var3 = 64;
         BlockEndPortal.bossDefeated = true;
         byte var4 = 4;
+        
+        // CraftBukkit start - Replace any "this.world" in the following with just "world"!
+        BlockStateListPopulator world = new BlockStateListPopulator(this.worldObj.getWorld());
 
         for (int var5 = var3 - 1; var5 <= var3 + 32; ++var5)
         {
@@ -677,35 +722,55 @@ public class EntityDragon extends EntityLiving implements IBossDisplayData, IEnt
                         {
                             if (var12 <= ((double)(var4 - 1) - 0.5D) * ((double)(var4 - 1) - 0.5D))
                             {
-                                this.worldObj.setBlockWithNotify(var6, var5, var7, Block.bedrock.blockID);
+                                world.setBlockWithNotify(var6, var5, var7, Block.bedrock.blockID);
                             }
                         }
                         else if (var5 > var3)
                         {
-                            this.worldObj.setBlockWithNotify(var6, var5, var7, 0);
+                            world.setBlockWithNotify(var6, var5, var7, 0);
                         }
                         else if (var12 > ((double)(var4 - 1) - 0.5D) * ((double)(var4 - 1) - 0.5D))
                         {
-                            this.worldObj.setBlockWithNotify(var6, var5, var7, Block.bedrock.blockID);
+                            world.setBlockWithNotify(var6, var5, var7, Block.bedrock.blockID);
                         }
                         else
                         {
-                            this.worldObj.setBlockWithNotify(var6, var5, var7, Block.endPortal.blockID);
+                            world.setBlockWithNotify(var6, var5, var7, Block.endPortal.blockID);
                         }
                     }
                 }
             }
         }
 
-        this.worldObj.setBlockWithNotify(par1, var3 + 0, par2, Block.bedrock.blockID);
-        this.worldObj.setBlockWithNotify(par1, var3 + 1, par2, Block.bedrock.blockID);
-        this.worldObj.setBlockWithNotify(par1, var3 + 2, par2, Block.bedrock.blockID);
-        this.worldObj.setBlockWithNotify(par1 - 1, var3 + 2, par2, Block.torchWood.blockID);
-        this.worldObj.setBlockWithNotify(par1 + 1, var3 + 2, par2, Block.torchWood.blockID);
-        this.worldObj.setBlockWithNotify(par1, var3 + 2, par2 - 1, Block.torchWood.blockID);
-        this.worldObj.setBlockWithNotify(par1, var3 + 2, par2 + 1, Block.torchWood.blockID);
-        this.worldObj.setBlockWithNotify(par1, var3 + 3, par2, Block.bedrock.blockID);
-        this.worldObj.setBlockWithNotify(par1, var3 + 4, par2, Block.dragonEgg.blockID);
+        world.setBlockWithNotify(par1, var3 + 0, par2, Block.bedrock.blockID);
+        world.setBlockWithNotify(par1, var3 + 1, par2, Block.bedrock.blockID);
+        world.setBlockWithNotify(par1, var3 + 2, par2, Block.bedrock.blockID);
+        world.setBlockWithNotify(par1 - 1, var3 + 2, par2, Block.torchWood.blockID);
+        world.setBlockWithNotify(par1 + 1, var3 + 2, par2, Block.torchWood.blockID);
+        world.setBlockWithNotify(par1, var3 + 2, par2 - 1, Block.torchWood.blockID);
+        world.setBlockWithNotify(par1, var3 + 2, par2 + 1, Block.torchWood.blockID);
+        world.setBlockWithNotify(par1, var3 + 3, par2, Block.bedrock.blockID);
+        world.setBlockWithNotify(par1, var3 + 4, par2, Block.dragonEgg.blockID);
+        
+        EntityCreatePortalEvent event = new EntityCreatePortalEvent((org.bukkit.entity.LivingEntity) this.getBukkitEntity(), java.util.Collections.unmodifiableList(world.getList()), org.bukkit.PortalType.ENDER);
+        this.worldObj.getServer().getPluginManager().callEvent(event);
+
+        if (!event.isCancelled()) {
+            for (BlockState state : event.getBlocks()) {
+                state.update(true);
+            }
+        } else {
+            for (BlockState state : event.getBlocks()) {
+                Packet53BlockChange packet = new Packet53BlockChange(state.getX(), state.getY(), state.getZ(), this.worldObj);
+                for (Iterator it = this.worldObj.playerEntities.iterator(); it.hasNext();) {
+                    EntityPlayer entity = (EntityPlayer) it.next();
+                    if (entity instanceof EntityPlayerMP) {
+                        ((EntityPlayerMP) entity).playerNetServerHandler.sendPacketToPlayer(packet);
+                    }
+                }
+            }
+        }
+        
         BlockEndPortal.bossDefeated = false;
     }
 
@@ -768,4 +833,12 @@ public class EntityDragon extends EntityLiving implements IBossDisplayData, IEnt
     {
         return 5.0F;
     }
+    
+    // CraftBukkit start
+    public int getExpReward() {
+        // This value is equal to the amount of experience dropped while falling from the sky (10 * 1000)
+        // plus what is dropped when the dragon hits the ground (2000)
+        return 12000;
+    }
+    // CraftBukkit end
 }

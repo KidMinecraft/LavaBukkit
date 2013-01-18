@@ -1,7 +1,5 @@
 package net.minecraft.entity.monster;
 
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EnumCreatureAttribute;
 import net.minecraft.item.Item;
@@ -9,6 +7,11 @@ import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
+
+import org.bukkit.event.entity.EntityTargetEvent;
+
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
 public class EntitySpider extends EntityMob
 {
@@ -112,7 +115,21 @@ public class EntitySpider extends EntityMob
 
         if (var3 > 0.5F && this.rand.nextInt(100) == 0)
         {
-            this.entityToAttack = null;
+        	// CraftBukkit start
+        	if(!worldObj.isRemote) {
+	            EntityTargetEvent event = new EntityTargetEvent(this.getBukkitEntity(), null, EntityTargetEvent.TargetReason.FORGOT_TARGET);
+	            this.worldObj.getServer().getPluginManager().callEvent(event);
+	
+	            if (!event.isCancelled()) {
+	                if (event.getTarget() == null) {
+	                    this.entityToAttack = null;
+	                } else {
+	                    this.entityToAttack = ((org.bukkit.craftbukkit.entity.CraftEntity) event.getTarget()).getHandle();
+	                }
+	            }
+        	} else
+        		this.entityToAttack = par1Entity;
+            // CraftBukkit end
         }
         else
         {

@@ -17,6 +17,7 @@ public class EntityPainting extends EntityHanging
     public EntityPainting(World par1World)
     {
         super(par1World);
+        this.art = EnumArt.values()[this.rand.nextInt(EnumArt.values().length)]; // CraftBukkit - generate a non-null painting
     }
 
     public EntityPainting(World par1World, int par2, int par3, int par4, int par5)

@@ -7,6 +7,12 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+
+import org.bukkit.craftbukkit.CraftServer;
+import org.bukkit.craftbukkit.CraftWorld;
+import org.bukkit.craftbukkit.map.CraftMapView;
+
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.*;
@@ -33,10 +39,20 @@ public class MapData extends WorldSavedData
      */
     private Map playersHashMap = new HashMap();
     public Map playersVisibleOnMap = new LinkedHashMap();
+    
+    // CraftBukkit start
+    public final CraftMapView mapView;
+    private CraftServer server;
+    public UUID uniqueId = null;
+    // CraftBukkit end
 
     public MapData(String par1Str)
     {
         super(par1Str);
+        // CraftBukkit start
+        mapView = new CraftMapView(this);
+        server = (CraftServer) org.bukkit.Bukkit.getServer();
+        // CraftBukkit end
     }
 
     /**
@@ -54,6 +70,28 @@ public class MapData extends WorldSavedData
         {
             this.dimension = ((NBTTagInt)dimension).data;
         }
+        
+        // CraftBukkit start
+        // LavaBukkit TODO: is it necessary to track UUID, since LB should ensure a stable dimension/world mapping?
+        {
+            long least = par1NBTTagCompound.getLong("UUIDLeast");
+            long most = par1NBTTagCompound.getLong("UUIDMost");
+
+            if (least != 0L && most != 0L) {
+                this.uniqueId = new UUID(most, least);
+
+                CraftWorld world = (CraftWorld) server.getWorld(this.uniqueId);
+                // Check if the stored world details are correct.
+                if (world == null) {
+                    /* All Maps which do not have their valid world loaded are set to a dimension which hopefully won't be reached.
+                       This is to prevent them being corrupted with the wrong map data. */
+                    this.dimension = Integer.MAX_VALUE; // LavaBukkit - 127 -> Integer.MAX_VALUE
+                } else {
+                    this.dimension = (byte) world.getHandle().provider.dimensionId;
+                }
+            }
+        }
+        // CraftBukkit end
 
         this.xCenter = par1NBTTagCompound.getInteger("xCenter");
         this.zCenter = par1NBTTagCompound.getInteger("zCenter");
@@ -108,6 +146,26 @@ public class MapData extends WorldSavedData
      */
     public void writeToNBT(NBTTagCompound par1NBTTagCompound)
     {
+    	// CraftBukkit start
+    	// LavaBukkit TODO: is it necessary to track UUID, since LB should ensure a stable dimension/world mapping?
+    	if (this.uniqueId == null) {
+            for (org.bukkit.World world : server.getWorlds()) {
+                CraftWorld cWorld = (CraftWorld) world;
+                if (cWorld.getHandle().provider.dimensionId == this.dimension) {
+                    this.uniqueId = cWorld.getUID();
+                    break;
+                }
+            }
+        }
+        /* Perform a second check to see if a matching world was found, this is a necessary
+           change incase Maps are forcefully unlinked from a World and lack a UID.*/
+        if (this.uniqueId != null) {
+            par1NBTTagCompound.setLong("UUIDLeast", this.uniqueId.getLeastSignificantBits());
+            par1NBTTagCompound.setLong("UUIDMost", this.uniqueId.getMostSignificantBits());
+        }
+        // CraftBukkit end
+        
+        
         par1NBTTagCompound.setInteger("dimension", this.dimension);
         par1NBTTagCompound.setInteger("xCenter", this.xCenter);
         par1NBTTagCompound.setInteger("zCenter", this.zCenter);

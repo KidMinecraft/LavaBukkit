@@ -1,5 +1,7 @@
 package net.minecraft.item;
 
+import org.bukkit.craftbukkit.block.CraftBlockState;
+
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.world.World;
 import net.minecraftforge.common.EnumPlantType;
@@ -36,7 +38,21 @@ public class ItemSeedFood extends ItemFood implements IPlantable
 
             if (var11 == this.soilId && par3World.isAirBlock(par4, par5 + 1, par6))
             {
+            	CraftBlockState blockState = par3World.isRemote ? null : CraftBlockState.getBlockState(par3World, par4, par5 + 1, par6); // CraftBukkit
+            	
                 par3World.setBlockWithNotify(par4, par5 + 1, par6, this.cropId);
+                
+                // CraftBukkit start - seeds
+                if(!par3World.isRemote) {
+	                org.bukkit.event.block.BlockPlaceEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callBlockPlaceEvent(par3World, par2EntityPlayer, blockState, par4, par5, par6);
+	
+	                if (event.isCancelled() || !event.canBuild()) {
+	                    event.getBlockPlaced().setTypeId(0);
+	                    return false;
+	                }
+                }
+                // CraftBukkit end
+
                 --par1ItemStack.stackSize;
                 return true;
             }

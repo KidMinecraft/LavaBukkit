@@ -30,6 +30,8 @@ public class ServerListenThread extends Thread
     private NetworkListenThread myNetworkListenThread;
     private final InetAddress myServerAddress;
     private final int myPort;
+    
+    long connectionThrottle; // CraftBukkit
 
     public ServerListenThread(NetworkListenThread par1NetworkListenThread, InetAddress par2InetAddress, int par3) throws IOException
     {
@@ -82,10 +84,19 @@ public class ServerListenThread extends Thread
                 InetAddress var2 = var1.getInetAddress();
                 long var3 = System.currentTimeMillis();
                 HashMap var5 = this.recentConnections;
+                
+                // CraftBukkit start
+                if (((MinecraftServer) this.myNetworkListenThread.getServer()).server == null) {
+                    myServerSocket.close();
+                    continue;
+                }
+
+                connectionThrottle = ((MinecraftServer) this.myNetworkListenThread.getServer()).server.getConnectionThrottle();
+                // CraftBukkit end
 
                 synchronized (this.recentConnections)
                 {
-                    if (this.recentConnections.containsKey(var2) && !isLocalHost(var2) && var3 - ((Long)this.recentConnections.get(var2)).longValue() < 4000L)
+                    if (this.recentConnections.containsKey(var2) && !isLocalHost(var2) && var3 - ((Long)this.recentConnections.get(var2)).longValue() < connectionThrottle) // CraftBukkit: 4000 -> connectionThrottle
                     {
                         this.recentConnections.put(var2, Long.valueOf(var3));
                         var1.close();

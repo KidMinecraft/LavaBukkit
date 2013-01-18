@@ -1,5 +1,9 @@
 package net.minecraft.entity.item;
 
+import org.bukkit.craftbukkit.entity.CraftPlayer;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
+
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.entity.EntityLiving;
@@ -50,6 +54,28 @@ public class EntityEnderPearl extends EntityThrowable
 
                 if (!var3.playerNetServerHandler.connectionClosed && var3.worldObj == this.worldObj)
                 {
+                	// CraftBukkit start
+                	org.bukkit.craftbukkit.entity.CraftPlayer player = (CraftPlayer)var3.getBukkitEntity();
+                	org.bukkit.Location location = getBukkitEntity().getLocation();
+                	location.setPitch(player.getLocation().getPitch());
+                	location.setYaw(player.getLocation().getYaw());
+                	
+                	PlayerTeleportEvent teleEvent = new PlayerTeleportEvent(player, player.getLocation(), location, PlayerTeleportEvent.TeleportCause.ENDER_PEARL);
+                	worldObj.getServer().getPluginManager().callEvent(teleEvent);
+                	
+                	if (!teleEvent.isCancelled() && !var3.playerNetServerHandler.connectionClosed) {
+                		var3.playerNetServerHandler.teleport(teleEvent.getTo());
+                		this.getThrower().fallDistance = 0.0F;
+                		
+                		EntityDamageByEntityEvent damageEvent = new EntityDamageByEntityEvent(this.getBukkitEntity(), player, EntityDamageByEntityEvent.DamageCause.FALL, 5);
+                		worldObj.getServer().getPluginManager().callEvent(damageEvent);
+                		
+                		if (!damageEvent.isCancelled() && !var3.playerNetServerHandler.connectionClosed) {
+                			player.setLastDamageCause(damageEvent);
+                			var3.attackEntityFrom(DamageSource.fall, damageEvent.getDamage());
+                		}
+                	}
+                	// CraftBukkit end
                     this.getThrower().setPositionAndUpdate(this.posX, this.posY, this.posZ);
                     this.getThrower().fallDistance = 0.0F;
                     this.getThrower().attackEntityFrom(DamageSource.fall, 5);

@@ -51,6 +51,15 @@ public class ItemMonsterPlacer extends Item
      */
     public boolean onItemUse(ItemStack par1ItemStack, EntityPlayer par2EntityPlayer, World par3World, int par4, int par5, int par6, int par7, float par8, float par9, float par10)
     {
+    	// CraftBukkit start
+    	switch(par1ItemStack.getItemDamage()) {
+    	case 48: // Mob
+    	case 49: // Monster
+    	case 63: // EnderDragon
+    	case 64: // WitherBoss
+    		return true;
+    	}
+    	// CraftBukkit end
         if (par3World.isRemote)
         {
             return true;
@@ -102,7 +111,7 @@ public class ItemMonsterPlacer extends Item
                     var10.rotationYawHead = var10.rotationYaw;
                     var10.renderYawOffset = var10.rotationYaw;
                     var10.initCreature();
-                    par0World.spawnEntityInWorld(var8);
+                    par0World.spawnEntityInWorld(var8, org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.SPAWNER_EGG); // CraftBukkit - added reason
                     var10.playLivingSound();
                 }
             }

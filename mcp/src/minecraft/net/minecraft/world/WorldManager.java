@@ -15,7 +15,7 @@ public class WorldManager implements IWorldAccess
     private MinecraftServer mcServer;
 
     /** The WorldServer object. */
-    private WorldServer theWorldServer;
+    public WorldServer theWorldServer; // CraftBukkit - private -> public
 
     public WorldManager(MinecraftServer par1MinecraftServer, WorldServer par2WorldServer)
     {

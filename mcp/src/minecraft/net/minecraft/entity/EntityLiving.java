@@ -7,9 +7,15 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+
+import org.bukkit.craftbukkit.event.CraftEventFactory;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityRegainHealthEvent;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.StepSound;
 import net.minecraft.block.material.Material;
+import net.minecraft.client.entity.EntityClientPlayerMP;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.ai.EntityAITasks;
 import net.minecraft.entity.ai.EntityJumpHelper;
@@ -40,6 +46,7 @@ import net.minecraft.potion.PotionEffect;
 import net.minecraft.potion.PotionHelper;
 import net.minecraft.util.ChunkCoordinates;
 import net.minecraft.util.DamageSource;
+import net.minecraft.util.EntityDamageSource;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
@@ -72,6 +79,9 @@ public abstract class EntityLiving extends Entity
     public float field_70770_ap;
     public float renderYawOffset = 0.0F;
     public float prevRenderYawOffset = 0.0F;
+    
+    public int maxAirTicks = 300; // CraftBukkit
+    public int expToDrop = 0; // CraftBukkit
 
     /** Entity head rotation yaw */
     public float rotationYawHead = 0.0F;
@@ -161,7 +171,7 @@ public abstract class EntityLiving extends Entity
     public float legSwing;
 
     /** The most recent player that has attacked this entity */
-    protected EntityPlayer attackingPlayer = null;
+    public EntityPlayer attackingPlayer = null; // CraftBukkit - protected -> public
 
     /**
      * Set to 60 when hit by the player or the player's wolf, then decrements. Used to determine whether the entity
@@ -177,7 +187,7 @@ public abstract class EntityLiving extends Entity
     protected HashMap activePotionsMap = new HashMap();
 
     /** Whether the DataWatcher needs to be updated with the active potions */
-    private boolean potionsNeedUpdate = true;
+    public boolean potionsNeedUpdate = true; // CraftBukkit - private -> public
     private int field_70748_f;
     private EntityLookHelper lookHelper;
     private EntityMoveHelper moveHelper;
@@ -202,7 +212,7 @@ public abstract class EntityLiving extends Entity
     private ItemStack[] equipment = new ItemStack[5];
 
     /** Chances for each equipment piece from dropping when this entity dies. */
-    protected float[] equipmentDropChances = new float[5];
+    public float[] equipmentDropChances = new float[5]; // CraftBukkit - protected -> public
     private ItemStack[] field_82180_bT = new ItemStack[5];
 
     /** Whether an arm swing is currently in progress. */
@@ -210,10 +220,10 @@ public abstract class EntityLiving extends Entity
     public int swingProgressInt = 0;
 
     /** Whether this entity can pick up items from the ground. */
-    protected boolean canPickUpLoot = false;
+    public boolean canPickUpLoot = false; // CraftBukkit; protected -> public
 
     /** Whether this entity should NOT despawn. */
-    private boolean persistenceRequired = false;
+    public boolean persistenceRequired = false; // CraftBukkit; private -> public
 
     /**
      * The number of updates over which the new position and rotation are to be applied to the entity.
@@ -237,7 +247,7 @@ public abstract class EntityLiving extends Entity
     float field_70706_bo = 0.0F;
 
     /** Amount of damage taken in last hit, in half-hearts */
-    protected int lastDamage = 0;
+    public int lastDamage = 0; // CraftBukkit - protected -> public
 
     /** Holds the living entity age, used to control the despawn. */
     protected int entityAge = 0;
@@ -416,11 +426,11 @@ public abstract class EntityLiving extends Entity
      */
     protected void updateFallState(double par1, boolean par3)
     {
-        if (!this.isInWater())
+    	if (!this.isInWater())
         {
             this.handleWaterMovement();
         }
-
+        
         if (par3 && this.fallDistance > 0.0F)
         {
             int var4 = MathHelper.floor_double(this.posX);
@@ -610,7 +620,7 @@ public abstract class EntityLiving extends Entity
         }
         else
         {
-            this.setAir(300);
+            this.setAir(maxAirTicks); // CraftBukkit
         }
 
         this.prevCameraPitch = this.cameraPitch;
@@ -681,20 +691,22 @@ public abstract class EntityLiving extends Entity
     {
         ++this.deathTime;
 
-        if (this.deathTime == 20)
+        if (this.deathTime >= 20 && !isDead) // CraftBukkit - (this.deathTicks == 20) -> (this.deathTicks >= 20 && !this.dead)
         {
             int var1;
 
-            if (!this.worldObj.isRemote && (this.recentlyHit > 0 || this.isPlayer()) && !this.isChild())
+            if (!this.worldObj.isRemote)
             {
-                var1 = this.getExperiencePoints(this.attackingPlayer);
-
-                while (var1 > 0)
-                {
-                    int var2 = EntityXPOrb.getXPSplit(var1);
-                    var1 -= var2;
-                    this.worldObj.spawnEntityInWorld(new EntityXPOrb(this.worldObj, this.posX, this.posY, this.posZ, var2));
-                }
+                // CraftBukkit start - update getExpReward() above if the removed if() changes!
+	            var1 = this.expToDrop;
+	            while (var1 > 0) {
+	                int j = EntityXPOrb.getXPSplit(var1);
+	
+	                var1 -= j;
+	                this.worldObj.spawnEntityInWorld(new EntityXPOrb(worldObj, posX, posY, posZ, j));
+	            }
+	            this.expToDrop = 0;
+	            // CraftBukkit end
             }
 
             this.setDead();
@@ -743,11 +755,23 @@ public abstract class EntityLiving extends Entity
             return this.experienceValue;
         }
     }
+    
+    // CraftBukkit start
+    public int getExpReward() {
+        int exp = this.getExperiencePoints(this.attackingPlayer);
+
+        if (!this.worldObj.isRemote && (this.recentlyHit > 0 || this.isPlayer()) && !this.isChild()) {
+            return exp;
+        } else {
+            return 0;
+        }
+    }
+    // CraftBukkit end
 
     /**
      * Only use is to identify if class is an instance of player for experience dropping
      */
-    protected boolean isPlayer()
+    protected boolean isPlayer() // CB name: alwaysGivesExp
     {
         return false;
     }
@@ -955,10 +979,26 @@ public abstract class EntityLiving extends Entity
      */
     public void heal(int par1)
     {
+    	// CraftBukkit start - delegate so we can handle providing a reason for health being regained
+    	heal(par1, EntityRegainHealthEvent.RegainReason.CUSTOM);
+    }
+    
+    public void heal(int par1, EntityRegainHealthEvent.RegainReason reason) {
+    	// CraftBukkit end
         if (this.health > 0)
         {
-            this.health += par1;
-
+        	// CraftBukkit start
+        	if(!worldObj.isRemote) {
+	        	EntityRegainHealthEvent event = new EntityRegainHealthEvent(this.getBukkitEntity(), par1, reason);
+	            this.worldObj.getServer().getPluginManager().callEvent(event);
+	
+	            if (!event.isCancelled()) {
+	                this.health += event.getAmount();
+	            }
+        	} else
+        		this.health += par1;
+            // CraftBukkit end
+            
             if (this.health > this.getMaxHealth())
             {
                 this.health = this.getMaxHealth();
@@ -1025,6 +1065,16 @@ public abstract class EntityLiving extends Entity
 
                 this.legYaw = 1.5F;
                 boolean var3 = true;
+                
+                // CraftBukkit start
+                if (par1DamageSource instanceof EntityDamageSource) {
+                    EntityDamageEvent event = CraftEventFactory.handleEntityDamageEvent(this, par1DamageSource, par2);
+                    if (event.isCancelled()) {
+                        return false;
+                    }
+                    par2 = event.getDamage();
+                }
+                // CraftBukkit end
 
                 if ((float)this.hurtResistantTime > (float)this.maxHurtResistantTime / 2.0F)
                 {
@@ -1387,16 +1437,29 @@ public abstract class EntityLiving extends Entity
 
         if (var2 > 0)
         {
-            if (var2 > 4)
-            {
-                this.playSound("damage.fallbig", 1.0F, 1.0F);
-            }
-            else
-            {
-                this.playSound("damage.fallsmall", 1.0F, 1.0F);
-            }
-
-            this.attackEntityFrom(DamageSource.fall, var2);
+			// CraftBukkit start
+        	EntityDamageEvent event = worldObj.isRemote ? null : new EntityDamageEvent(this.getBukkitEntity(), EntityDamageEvent.DamageCause.FALL, var2);
+			if(event != null) this.worldObj.getServer().getPluginManager().callEvent(event);
+ 
+			if (worldObj.isRemote || (!event.isCancelled() && event.getDamage() != 0))
+			{
+				if (var2 > 4)
+				{
+					this.playSound("damage.fallbig", 1.0F, 1.0F);
+				}
+				else
+				{
+					this.playSound("damage.fallsmall", 1.0F, 1.0F);
+			    }
+			    
+			    if(!worldObj.isRemote) {
+			        var2 = event.getDamage();
+			    
+			        getBukkitEntity().setLastDamageCause(event);
+			    }
+			    this.attackEntityFrom(DamageSource.fall, var2);
+			}
+			// CraftBukkit end
             int var3 = this.worldObj.getBlockId(MathHelper.floor_double(this.posX), MathHelper.floor_double(this.posY - 0.20000000298023224D - (double)this.yOffset), MathHelper.floor_double(this.posZ));
 
             if (var3 > 0)
@@ -1413,10 +1476,10 @@ public abstract class EntityLiving extends Entity
     public void moveEntityWithHeading(float par1, float par2)
     {
         double var9;
-
+        
         if (this.isInWater() && (!(this instanceof EntityPlayer) || !((EntityPlayer)this).capabilities.isFlying))
         {
-            var9 = this.posY;
+        	var9 = this.posY;
             this.moveFlying(par1, par2, this.isAIEnabled() ? 0.04F : 0.02F);
             this.moveEntity(this.motionX, this.motionY, this.motionZ);
             this.motionX *= 0.800000011920929D;
@@ -1659,8 +1722,17 @@ public abstract class EntityLiving extends Entity
         this.hurtTime = par1NBTTagCompound.getShort("HurtTime");
         this.deathTime = par1NBTTagCompound.getShort("DeathTime");
         this.attackTime = par1NBTTagCompound.getShort("AttackTime");
-        this.canPickUpLoot = par1NBTTagCompound.getBoolean("CanPickUpLoot");
-        this.persistenceRequired = par1NBTTagCompound.getBoolean("PersistenceRequired");
+        // CraftBukkit start - if looting or persistence is false only use it if it was set after we started using it
+        boolean data = par1NBTTagCompound.getBoolean("CanPickUpLoot");
+        if (isLevelAtLeast(par1NBTTagCompound, 1) || data) {
+            this.canPickUpLoot = data;
+        }
+
+        data = par1NBTTagCompound.getBoolean("PersistenceRequired");
+        if (isLevelAtLeast(par1NBTTagCompound, 1) || data) {
+            this.persistenceRequired = data;
+        }
+        // CraftBukkit end
         NBTTagList var2;
         int var3;
 
@@ -1819,6 +1891,8 @@ public abstract class EntityLiving extends Entity
         this.moveStrafing *= 0.98F;
         this.moveForward *= 0.98F;
         this.randomYawVelocity *= 0.9F;
+        if(this instanceof EntityClientPlayerMP && posY < 256.7)
+        	moveForward = moveForward;
         float var11 = this.landMovementFactor;
         this.landMovementFactor *= this.getSpeedModifier();
         this.moveEntityWithHeading(this.moveStrafing, this.moveForward);
@@ -1834,6 +1908,7 @@ public abstract class EntityLiving extends Entity
         this.worldObj.theProfiler.endSection();
         this.worldObj.theProfiler.startSection("looting");
 
+        if(!(this instanceof EntityPlayer)) // CraftBukkit - Don't run mob pickup code on players
         if (!this.worldObj.isRemote && this.canPickUpLoot && !this.dead && this.worldObj.getGameRules().getGameRuleBooleanValue("mobGriefing"))
         {
             List var2 = this.worldObj.getEntitiesWithinAABB(EntityItem.class, this.boundingBox.expand(1.0D, 0.0D, 1.0D));
@@ -2024,12 +2099,12 @@ public abstract class EntityLiving extends Entity
                 double var6 = var1.posZ - this.posZ;
                 double var8 = var2 * var2 + var4 * var4 + var6 * var6;
 
-                if (this.canDespawn() && var8 > 16384.0D)
+                if (var8 > 16384.0D) // CraftBukkit - remove this.canDespawn() check
                 {
                     this.setDead();
                 }
 
-                if (this.entityAge > 600 && this.rand.nextInt(800) == 0 && var8 > 1024.0D && this.canDespawn())
+                if (this.entityAge > 600 && this.rand.nextInt(800) == 0 && var8 > 1024.0D) // CraftBukkit - remove this.canDespawn() check
                 {
                     this.setDead();
                 }
@@ -2039,6 +2114,7 @@ public abstract class EntityLiving extends Entity
                 }
             }
         }
+        else entityAge = 0; // CraftBukkit
     }
 
     protected void updateAITasks()

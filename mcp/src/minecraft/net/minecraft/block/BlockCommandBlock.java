@@ -1,6 +1,9 @@
 package net.minecraft.block;
 
 import java.util.Random;
+
+import org.bukkit.event.block.BlockRedstoneEvent;
+
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.tileentity.TileEntity;
@@ -33,6 +36,18 @@ public class BlockCommandBlock extends BlockContainer
             boolean var6 = par1World.isBlockIndirectlyGettingPowered(par2, par3, par4);
             int var7 = par1World.getBlockMetadata(par2, par3, par4);
             boolean var8 = (var7 & 1) != 0;
+            
+            // CraftBukkit start
+            org.bukkit.block.Block block = par1World.getWorld().getBlockAt(par2, par3, par4);
+            int old = var6 ? 1 : 0;
+            int current = var8 ? 1 : 0;
+
+            BlockRedstoneEvent eventRedstone = new BlockRedstoneEvent(block, old, current);
+            par1World.getServer().getPluginManager().callEvent(eventRedstone);
+            
+            var6 = eventRedstone.getNewCurrent() > 0;
+            var8 = eventRedstone.getOldCurrent() > 0;
+            // CraftBukkit end
 
             if (var6 && !var8)
             {

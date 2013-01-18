@@ -41,7 +41,7 @@ public class EntityTracker
 {
     private final WorldServer theWorld;
     private Set trackedEntities = new HashSet();
-    private IntHashMap trackedEntityIDs = new IntHashMap();
+    public IntHashMap trackedEntityIDs = new IntHashMap(); // CraftBukkit - private -> public
     private int entityViewDistance;
 
     public EntityTracker(WorldServer par1WorldServer)
@@ -54,7 +54,8 @@ public class EntityTracker
      * if entity is a player sends all tracked events to the player, otherwise, adds with a visibility and update arate
      * based on the class type
      */
-    public void addEntityToTracker(Entity par1Entity)
+    // CraftBukkit - synchronized
+    public synchronized void addEntityToTracker(Entity par1Entity)
     {
         if (EntityRegistry.instance().tryTrackingEntity(this, par1Entity))
         {
@@ -184,7 +185,8 @@ public class EntityTracker
         this.addEntityToTracker(par1Entity, par2, par3, false);
     }
 
-    public void addEntityToTracker(Entity par1Entity, int par2, int par3, boolean par4)
+    // CraftBukkit - synchronized
+    public synchronized void addEntityToTracker(Entity par1Entity, int par2, int par3, boolean par4)
     {
         if (par2 > this.entityViewDistance)
         {
@@ -204,7 +206,8 @@ public class EntityTracker
         }
     }
 
-    public void removeEntityFromAllTrackingPlayers(Entity par1Entity)
+    // CraftBukkit - synchronized
+    public synchronized void removeEntityFromAllTrackingPlayers(Entity par1Entity)
     {
         if (par1Entity instanceof EntityPlayerMP)
         {
@@ -227,7 +230,8 @@ public class EntityTracker
         }
     }
 
-    public void updateTrackedEntities()
+    // CraftBukkit - synchronized
+    public synchronized void updateTrackedEntities()
     {
         ArrayList var1 = new ArrayList();
         Iterator var2 = this.trackedEntities.iterator();
@@ -263,7 +267,8 @@ public class EntityTracker
     /**
      * does not send the packet to the entity if the entity is a player
      */
-    public void sendPacketToAllPlayersTrackingEntity(Entity par1Entity, Packet par2Packet)
+    // CraftBukkit - synchronized
+    public synchronized void sendPacketToAllPlayersTrackingEntity(Entity par1Entity, Packet par2Packet)
     {
         EntityTrackerEntry var3 = (EntityTrackerEntry)this.trackedEntityIDs.lookup(par1Entity.entityId);
 
@@ -276,7 +281,8 @@ public class EntityTracker
     /**
      * sends to the entity if the entity is a player
      */
-    public void sendPacketToAllAssociatedPlayers(Entity par1Entity, Packet par2Packet)
+    // CraftBukkit - synchronized
+    public synchronized void sendPacketToAllAssociatedPlayers(Entity par1Entity, Packet par2Packet)
     {
         EntityTrackerEntry var3 = (EntityTrackerEntry)this.trackedEntityIDs.lookup(par1Entity.entityId);
 
@@ -286,7 +292,8 @@ public class EntityTracker
         }
     }
 
-    public void removeAllTrackingPlayers(EntityPlayerMP par1EntityPlayerMP)
+    // CraftBukkit - synchronized
+    public synchronized void removeAllTrackingPlayers(EntityPlayerMP par1EntityPlayerMP)
     {
         Iterator var2 = this.trackedEntities.iterator();
 

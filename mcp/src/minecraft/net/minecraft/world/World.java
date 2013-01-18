@@ -10,6 +10,16 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+
+import org.bukkit.Bukkit;
+import org.bukkit.craftbukkit.CraftServer;
+import org.bukkit.craftbukkit.CraftWorld;
+import org.bukkit.craftbukkit.event.CraftEventFactory;
+import org.bukkit.craftbukkit.util.LongHashSet;
+import org.bukkit.event.block.BlockPhysicsEvent;
+import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
+import org.bukkit.generator.ChunkGenerator;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockFluid;
 import net.minecraft.block.BlockHalfSlab;
@@ -19,7 +29,15 @@ import net.minecraft.command.IEntitySelector;
 import net.minecraft.crash.CrashReport;
 import net.minecraft.crash.CrashReportCategory;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLiving;
+import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.item.EntityMinecart;
+import net.minecraft.entity.monster.EntityGhast;
+import net.minecraft.entity.monster.EntityGolem;
+import net.minecraft.entity.monster.EntityMob;
+import net.minecraft.entity.monster.EntitySlime;
+import net.minecraft.entity.passive.EntityAnimal;
+import net.minecraft.entity.passive.EntityWaterMob;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.pathfinding.PathEntity;
@@ -40,6 +58,7 @@ import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.biome.WorldChunkManager;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
+import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraft.world.storage.ISaveHandler;
 import net.minecraft.world.storage.MapStorage;
 import net.minecraft.world.storage.WorldInfo;
@@ -136,7 +155,7 @@ public abstract class World implements IBlockAccess
     /**
      * holds information about a world (size on disk, time, spawn point, seed, ...)
      */
-    protected WorldInfo worldInfo;
+    public WorldInfo worldInfo; // CraftBukkit - protected -> public
 
     /** Boolean that is set to true when trying to find a spawn point */
     public boolean findingSpawnPoint;
@@ -152,13 +171,13 @@ public abstract class World implements IBlockAccess
     private boolean scanningTileEntities;
 
     /** indicates if enemies are spawned or not */
-    protected boolean spawnHostileMobs = true;
+    public boolean spawnHostileMobs = true; // CraftBukkit - protected -> public
 
     /** A flag indicating whether we should spawn peaceful mobs. */
-    protected boolean spawnPeacefulMobs = true;
+    public boolean spawnPeacefulMobs = true; // CraftBukkit - protected -> public
 
     /** Positions to update */
-    public Set activeChunkSet = new HashSet();
+    public LongHashSet activeChunkSet = new LongHashSet(); // CraftBukkit: Set/HashSet -> LongHashSet
 
     /** number of ticks until the next random ambients play */
     private int ambientTickCountdown;
@@ -179,7 +198,7 @@ public abstract class World implements IBlockAccess
 
     /** This is set to true for client worlds, and false for server worlds. */
     public boolean isRemote;
-
+    
     /**
      * Gets the biome for a given set of x/z coordinates
      */
@@ -245,8 +264,34 @@ public abstract class World implements IBlockAccess
         this.calculateInitialWeather();
     }
 
+    // CraftBukkit start
+    public CraftWorld world;
+    public boolean pvpMode;
+    Chunk lastChunkAccessed;
+    int lastXAccessed = Integer.MIN_VALUE;
+    int lastZAccessed = Integer.MIN_VALUE;
+    final Object chunkLock = new Object();
+    
+    public int ticksPerMonsterSpawns;
+    public int ticksPerAnimalSpawns;
+    
+
+    public CraftWorld getWorld() {
+    	if(isRemote)
+    		throw new IllegalStateException("This is the client!");
+        return this.world;
+    }
+
+    public CraftServer getServer() {
+        return (CraftServer) Bukkit.getServer();
+    }
+    
     public World(ISaveHandler par1ISaveHandler, String par2Str, WorldSettings par3WorldSettings, WorldProvider par4WorldProvider, Profiler par5Profiler)
     {
+        this.ticksPerAnimalSpawns = this.getServer().getTicksPerAnimalSpawns();
+        this.ticksPerMonsterSpawns = this.getServer().getTicksPerMonsterSpawns();
+        // CraftBukkit end
+        
         this.ambientTickCountdown = this.rand.nextInt(12000);
         this.lightUpdateBlockList = new int[32768];
         this.entitiesWithinAABBExcludingEntity = new ArrayList();
@@ -482,7 +527,9 @@ public abstract class World implements IBlockAccess
             {
                 for (int var8 = par3; var8 <= par6; ++var8)
                 {
-                    if (!this.chunkExists(var7, var8))
+                	// CraftBukkit - check unload queue too so we don't leak a chunk
+                	// LavaBukkit - client check
+                    if (!this.chunkExists(var7, var8) || (!isRemote && ((WorldServer) this).theChunkProviderServer.chunksToUnload.contains(var7, var8)))
                     {
                         return false;
                     }
@@ -694,9 +741,12 @@ public abstract class World implements IBlockAccess
      */
     public boolean setBlockWithNotify(int par1, int par2, int par3, int par4)
     {
+    	// CraftBukkit start
+    	int old = getBlockId(par1, par2, par3);
         if (this.setBlock(par1, par2, par3, par4))
         {
-            this.notifyBlockChange(par1, par2, par3, par4);
+            this.notifyBlockChange(par1, par2, par3, par4 == 0 ? old : par4);
+            // CraftBukkit end
             return true;
         }
         else
@@ -816,6 +866,20 @@ public abstract class World implements IBlockAccess
             {
                 try
                 {
+                    // CraftBukkit start
+                	if(this instanceof WorldServer) {
+	                    CraftWorld world = ((WorldServer) this).getWorld();
+	                    if (world != null) {
+	                        BlockPhysicsEvent event = new BlockPhysicsEvent(world.getBlockAt(par1, par2, par3), par4);
+	                        this.getServer().getPluginManager().callEvent(event);
+	
+	                        if (event.isCancelled()) {
+	                            return;
+	                        }
+	                    }
+                	}
+                    // CraftBukkit end
+                    
                     var6.onNeighborBlockChange(this, par1, par2, par3, par4);
                 }
                 catch (Throwable var13)
@@ -1391,9 +1455,11 @@ public abstract class World implements IBlockAccess
 
                         if (var38 != null)
                         {
+                        	var34.myVec3LocalPool.release(var34); // CraftBukkit
                             return var38;
                         }
                     }
+                    var34.myVec3LocalPool.release(var34); // CraftBukkit
                 }
 
                 return null;
@@ -1505,8 +1571,17 @@ public abstract class World implements IBlockAccess
     /**
      * Called to place all entities as part of a world
      */
+    // CraftBukkit start
     public boolean spawnEntityInWorld(Entity par1Entity)
     {
+    	return spawnEntityInWorld(par1Entity, SpawnReason.DEFAULT);
+    }
+    
+    // Changed signature, added SpawnReason
+    public boolean spawnEntityInWorld(Entity par1Entity, SpawnReason reason) {
+    	if(par1Entity == null) return false;
+    	// CraftBukkit end
+    	
         int var2 = MathHelper.floor_double(par1Entity.posX / 16.0D);
         int var3 = MathHelper.floor_double(par1Entity.posZ / 16.0D);
         boolean var4 = false;
@@ -1515,9 +1590,39 @@ public abstract class World implements IBlockAccess
         {
             var4 = true;
         }
+        
+        // CraftBukkit start
+        org.bukkit.event.Cancellable event = null;
+        if(!isRemote) {
+	        if (par1Entity instanceof EntityLiving && !(par1Entity instanceof EntityPlayer)) {
+	            boolean isAnimal = par1Entity instanceof EntityAnimal || par1Entity instanceof EntityWaterMob || par1Entity instanceof EntityGolem;
+	            boolean isMonster = par1Entity instanceof EntityMob || par1Entity instanceof EntityGhast || par1Entity instanceof EntitySlime;
+	
+	            if (reason != SpawnReason.CUSTOM) {
+	                if (isAnimal && !spawnPeacefulMobs || isMonster && !spawnHostileMobs)  {
+	                    par1Entity.isDead = true;
+	                    return false;
+	                }
+	            }
+	
+	            event = CraftEventFactory.callCreatureSpawnEvent((EntityLiving) par1Entity, reason);
+	        } else if (par1Entity instanceof EntityItem) {
+	            event = CraftEventFactory.callItemSpawnEvent((EntityItem) par1Entity);
+	        } else if (par1Entity.getBukkitEntity() instanceof org.bukkit.entity.Projectile) {
+	            // Not all projectiles extend EntityProjectile, so check for Bukkit interface instead
+	            event = CraftEventFactory.callProjectileLaunchEvent(par1Entity);
+	        }
+	
+	        if (event != null && (event.isCancelled() || par1Entity.isDead)) {
+	            par1Entity.setDead();
+	            return false;
+	        }
+        }
+        // CraftBukkit end
 
         if (!var4 && !this.chunkExists(var2, var3))
         {
+        	par1Entity.setDead(); // CraftBukkit
             return false;
         }
         else
@@ -1550,6 +1655,7 @@ public abstract class World implements IBlockAccess
         {
             ((IWorldAccess)this.worldAccesses.get(var2)).obtainEntitySkin(par1Entity);
         }
+        par1Entity.valid = true; // CraftBukkit
     }
 
     /**
@@ -1561,6 +1667,7 @@ public abstract class World implements IBlockAccess
         {
             ((IWorldAccess)this.worldAccesses.get(var2)).releaseEntitySkin(par1Entity);
         }
+        par1Entity.valid = false; // CraftBukkit
     }
 
     /**
@@ -1627,7 +1734,7 @@ public abstract class World implements IBlockAccess
      */
     public List getCollidingBoundingBoxes(Entity par1Entity, AxisAlignedBB par2AxisAlignedBB)
     {
-        this.collidingBoundingBoxes.clear();
+    	this.collidingBoundingBoxes.clear();
         int var3 = MathHelper.floor_double(par2AxisAlignedBB.minX);
         int var4 = MathHelper.floor_double(par2AxisAlignedBB.maxX + 1.0D);
         int var5 = MathHelper.floor_double(par2AxisAlignedBB.minY);
@@ -1673,7 +1780,7 @@ public abstract class World implements IBlockAccess
                 this.collidingBoundingBoxes.add(var13);
             }
         }
-
+        
         return this.collidingBoundingBoxes;
     }
 
@@ -2029,15 +2136,26 @@ public abstract class World implements IBlockAccess
         for (var1 = 0; var1 < this.weatherEffects.size(); ++var1)
         {
             var2 = (Entity)this.weatherEffects.get(var1);
+            
+            // CraftBukkit start - fixed an NPE, don't process entities in chunks queued for unload
+            if (var2 == null) {
+                continue;
+            }
+
+            ChunkProviderServer chunkProviderServer = ((WorldServer) this).theChunkProviderServer;
+            if (chunkProviderServer.chunksToUnload.contains(MathHelper.floor_double(var2.posX) >> 4, MathHelper.floor_double(var2.posZ) >> 4)) {
+                continue;
+            }
+            // CraftBukkit end
 
             try
             {
                 ++var2.ticksExisted;
                 var2.onUpdate();
             }
-            catch (Throwable var7)
+            catch (Throwable var6)
             {
-                var4 = CrashReport.makeCrashReport(var7, "Ticking entity");
+                var4 = CrashReport.makeCrashReport(var6, "Ticking entity");
                 var5 = var4.makeCategory("Entity being ticked");
 
                 if (var2 == null)
@@ -2086,6 +2204,15 @@ public abstract class World implements IBlockAccess
         for (var1 = 0; var1 < this.loadedEntityList.size(); ++var1)
         {
             var2 = (Entity)this.loadedEntityList.get(var1);
+            
+            // CraftBukkit start - don't tick entities in chunks queued for unload
+            if(!isRemote) {
+	            ChunkProviderServer chunkProviderServer = ((WorldServer) this).theChunkProviderServer;
+	            if (chunkProviderServer.chunksToUnload.contains(MathHelper.floor_double(var2.posX) >> 4, MathHelper.floor_double(var2.posZ) >> 4)) {
+	                continue;
+	            }
+            }
+            // CraftBukkit end
 
             if (var2.ridingEntity != null)
             {
@@ -2143,6 +2270,15 @@ public abstract class World implements IBlockAccess
         while (var14.hasNext())
         {
             TileEntity var9 = (TileEntity)var14.next();
+            
+            // CraftBukkit start - don't tick entities in chunks queued for unload
+            if(this instanceof WorldServer) {
+	            ChunkProviderServer chunkProviderServer = ((WorldServer) this).theChunkProviderServer;
+	            if (chunkProviderServer.chunksToUnload.contains(var9.xCoord >> 4, var9.zCoord >> 4)) {
+	                continue;
+	            }
+            }
+            // CraftBukkit end
 
             if (!var9.isInvalid() && var9.func_70309_m() && this.blockExists(var9.xCoord, var9.yCoord, var9.zCoord))
             {
@@ -2150,9 +2286,9 @@ public abstract class World implements IBlockAccess
                 {
                     var9.updateEntity();
                 }
-                catch (Throwable var6)
+                catch (Throwable var7)
                 {
-                    var4 = CrashReport.makeCrashReport(var6, "Ticking tile entity");
+                    var4 = CrashReport.makeCrashReport(var7, "Ticking tile entity");
                     var5 = var4.makeCategory("Tile entity being ticked");
 
                     if (var9 == null)
@@ -2525,6 +2661,8 @@ public abstract class World implements IBlockAccess
      */
     public boolean handleMaterialAcceleration(AxisAlignedBB par1AxisAlignedBB, Material par2Material, Entity par3Entity)
     {
+    	double oldMY = par3Entity.motionY;
+    	
         int var4 = MathHelper.floor_double(par1AxisAlignedBB.minX);
         int var5 = MathHelper.floor_double(par1AxisAlignedBB.maxX + 1.0D);
         int var6 = MathHelper.floor_double(par1AxisAlignedBB.minY);
@@ -2570,7 +2708,10 @@ public abstract class World implements IBlockAccess
                 par3Entity.motionX += var11.xCoord * var18;
                 par3Entity.motionY += var11.yCoord * var18;
                 par3Entity.motionZ += var11.zCoord * var18;
+                if(par3Entity.motionY > oldMY && par3Entity.motionY > 0) System.out.println(oldMY+" -> "+par3Entity.motionY+" "+var11);
             }
+            
+            var11.myVec3LocalPool.release(var11); // CraftBukkit
 
             return var10;
         }
@@ -3084,7 +3225,10 @@ public abstract class World implements IBlockAccess
     protected void setActivePlayerChunksAndCheckLight()
     {
         this.activeChunkSet.clear();
-        this.activeChunkSet.addAll(getPersistentChunks().keySet());
+        // LavaBukkit start
+        for(ChunkCoordIntPair p : getPersistentChunks().keySet())
+        	activeChunkSet.add(p.chunkXPos, p.chunkZPos);
+        // LavaBukkit end
 
         this.theProfiler.startSection("buildList");
         int var1;
@@ -3103,7 +3247,16 @@ public abstract class World implements IBlockAccess
             {
                 for (int var7 = -var5; var7 <= var5; ++var7)
                 {
-                    this.activeChunkSet.add(new ChunkCoordIntPair(var6 + var3, var7 + var4));
+                    // CraftBukkit start - don't tick chunks queued for unload
+                	if(!isRemote) {
+	                    ChunkProviderServer chunkProviderServer = ((WorldServer) var2.worldObj).theChunkProviderServer;
+	                    if (chunkProviderServer.chunksToUnload.contains(var6 + var3, var7 + var4)) {
+	                        continue;
+	                    }
+                	}
+                    // CraftBukkit end
+                    
+                    this.activeChunkSet.add(var6 + var3, var7 + var4); // CraftBukkit
                 }
             }
         }
@@ -3140,7 +3293,7 @@ public abstract class World implements IBlockAccess
             int var4 = this.updateLCG >> 2;
             int var5 = var4 & 15;
             int var6 = var4 >> 8 & 15;
-            int var7 = var4 >> 16 & 127;
+            int var7 = var4 >> 16 & 255; // CraftBukkit - 127 -> 255
             int var8 = par3Chunk.getBlockID(var5, var7, var6);
             var5 += par1;
             var6 += par2;
@@ -3748,6 +3901,7 @@ public abstract class World implements IBlockAccess
         for (int var2 = 0; var2 < par1List.size(); ++var2)
         {
             Entity entity = (Entity)par1List.get(var2);
+            if(entity == null) continue; // CraftBukkit
             if (!MinecraftForge.EVENT_BUS.post(new EntityJoinWorldEvent(entity, this)))
             {
                 loadedEntityList.add(entity);
@@ -3901,6 +4055,12 @@ public abstract class World implements IBlockAccess
         for (int var12 = 0; var12 < this.playerEntities.size(); ++var12)
         {
             EntityPlayer var13 = (EntityPlayer)this.playerEntities.get(var12);
+            // CraftBukkit start - fixed an NPE
+            if (var13 == null || var13.isDead) {
+                continue;
+            }
+            // CraftBukkit end
+            
             double var14 = var13.getDistanceSq(par1, par3, par5);
 
             if ((par7 < 0.0D || var14 < par7 * par7) && (var9 == -1.0D || var14 < var9))
@@ -3932,6 +4092,11 @@ public abstract class World implements IBlockAccess
         for (int var12 = 0; var12 < this.playerEntities.size(); ++var12)
         {
             EntityPlayer var13 = (EntityPlayer)this.playerEntities.get(var12);
+            // CraftBukkit start - fixed an NPE
+            if (var13 == null || var13.isDead) {
+                continue;
+            }
+            // CraftBukkit end
 
             if (!var13.capabilities.disableDamage && var13.isEntityAlive())
             {
@@ -4458,4 +4623,14 @@ public abstract class World implements IBlockAccess
     {
         return ForgeChunkManager.getPersistentChunksFor(this);
     }
+    
+    // CraftBukkit start
+    // Calls the method that checks to see if players are sleeping
+    // Called by CraftPlayer.setPermanentSleeping()
+    public void checkSleepStatus() {
+        if (!this.isRemote) {
+            this.updateAllPlayersSleepingFlag();
+        }
+    }
+    // CraftBukkit end
 }

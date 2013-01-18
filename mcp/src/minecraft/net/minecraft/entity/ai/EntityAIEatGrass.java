@@ -1,5 +1,8 @@
 package net.minecraft.entity.ai;
 
+import org.bukkit.Material;
+import org.bukkit.craftbukkit.event.CraftEventFactory;
+
 import net.minecraft.block.Block;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.util.MathHelper;
@@ -84,15 +87,23 @@ public class EntityAIEatGrass extends EntityAIBase
 
             if (this.theWorld.getBlockId(var1, var2, var3) == Block.tallGrass.blockID)
             {
-                this.theWorld.playAuxSFX(2001, var1, var2, var3, Block.tallGrass.blockID + 4096);
-                this.theWorld.setBlockWithNotify(var1, var2, var3, 0);
-                this.theEntity.eatGrassBonus();
+                // CraftBukkit start
+                if (!CraftEventFactory.callEntityChangeBlockEvent(this.theEntity.getBukkitEntity(), this.theWorld.getWorld().getBlockAt(var1, var2, var3), Material.AIR).isCancelled()) {
+	                this.theWorld.playAuxSFX(2001, var1, var2, var3, Block.tallGrass.blockID + 4096);
+	                this.theWorld.setBlockWithNotify(var1, var2, var3, 0);
+	                this.theEntity.eatGrassBonus();
+                }
+                // CraftBukkit end
             }
             else if (this.theWorld.getBlockId(var1, var2 - 1, var3) == Block.grass.blockID)
             {
-                this.theWorld.playAuxSFX(2001, var1, var2 - 1, var3, Block.grass.blockID);
-                this.theWorld.setBlockWithNotify(var1, var2 - 1, var3, Block.dirt.blockID);
-                this.theEntity.eatGrassBonus();
+                // CraftBukkit start
+                if (!CraftEventFactory.callEntityChangeBlockEvent(this.theEntity.getBukkitEntity(), this.theWorld.getWorld().getBlockAt(var1, var2, var3), Material.DIRT).isCancelled()) {
+		            this.theWorld.playAuxSFX(2001, var1, var2 - 1, var3, Block.grass.blockID);
+	                this.theWorld.setBlockWithNotify(var1, var2 - 1, var3, Block.dirt.blockID);
+	                this.theEntity.eatGrassBonus();
+                }
+                // CraftBukkit end
             }
         }
     }

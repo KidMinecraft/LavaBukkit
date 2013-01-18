@@ -1,10 +1,7 @@
 package net.minecraft.server;
 
-import cpw.mods.fml.common.FMLCommonHandler;
-import cpw.mods.fml.relauncher.ArgsWrapper;
-import cpw.mods.fml.relauncher.FMLRelauncher;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import immibis.lavabukkit.world.BukkitWorldRegistry;
+
 import java.awt.GraphicsEnvironment;
 import java.io.File;
 import java.io.IOException;
@@ -17,6 +14,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import net.minecraft.block.BlockDispenser;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandManager;
@@ -35,6 +33,7 @@ import net.minecraft.dispenser.BehaviorExpBottleDispense;
 import net.minecraft.dispenser.BehaviorMobEggDispense;
 import net.minecraft.dispenser.BehaviorPotionDispense;
 import net.minecraft.dispenser.BehaviorSnowballDispense;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.Item;
 import net.minecraft.network.NetworkListenThread;
 import net.minecraft.network.packet.Packet;
@@ -66,10 +65,14 @@ import net.minecraft.world.demo.DemoWorldServer;
 import net.minecraft.world.storage.ISaveFormat;
 import net.minecraft.world.storage.ISaveHandler;
 import net.minecraft.world.storage.WorldInfo;
-
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.WorldEvent;
+import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.relauncher.ArgsWrapper;
+import cpw.mods.fml.relauncher.FMLRelauncher;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
 public abstract class MinecraftServer implements ICommandSender, Runnable, IPlayerUsage
 {
@@ -78,11 +81,11 @@ public abstract class MinecraftServer implements ICommandSender, Runnable, IPlay
 
     /** Instance of Minecraft Server. */
     private static MinecraftServer mcServer = null;
-    private final ISaveFormat anvilConverterForAnvilFile;
+    public ISaveFormat anvilConverterForAnvilFile; // CraftBukkit - private final -> public. CB name: convertable
 
     /** The PlayerUsageSnooper instance. */
     private final PlayerUsageSnooper usageSnooper = new PlayerUsageSnooper("server", this);
-    private final File anvilFile;
+    public File anvilFile; // CraftBukkit - private final -> public. CB name: universe
 
     /**
      * Collection of objects to update every tick. Type: List<IUpdatePlayerListBox>
@@ -176,6 +179,14 @@ public abstract class MinecraftServer implements ICommandSender, Runnable, IPlay
     private long timeOfLastWarning;
     private String userMessage;
     private boolean startProfiling;
+    
+    // CraftBukkit start
+    public org.bukkit.craftbukkit.CraftServer server;
+    public org.bukkit.command.ConsoleCommandSender console;
+    public org.bukkit.command.RemoteConsoleCommandSender remoteConsole;
+    public java.util.Queue<Runnable> processQueue = new java.util.concurrent.ConcurrentLinkedQueue<Runnable>();
+    public int autosavePeriod;
+    // CraftBukkit end
 
     public MinecraftServer(File par1File)
     {
@@ -208,6 +219,8 @@ public abstract class MinecraftServer implements ICommandSender, Runnable, IPlay
         BlockDispenser.dispenseBehaviorRegistry.putObject(Item.bucketLava, var2);
         BlockDispenser.dispenseBehaviorRegistry.putObject(Item.bucketWater, var2);
         BlockDispenser.dispenseBehaviorRegistry.putObject(Item.bucketEmpty, new BehaviorBucketEmptyDispense(this));
+        
+        immibis.lavabukkit.LavaBukkitMod.registerDispenseBehaviours(); // LavaBukkit
     }
 
     /**
@@ -228,7 +241,7 @@ public abstract class MinecraftServer implements ICommandSender, Runnable, IPlay
     /**
      * Typically "menu.convertingLevel", "menu.loadingLevel" or others.
      */
-    protected synchronized void setUserMessage(String par1Str)
+    public synchronized void setUserMessage(String par1Str) // LavaBukkit - protected -> public
     {
         this.userMessage = par1Str;
     }
@@ -262,6 +275,8 @@ public abstract class MinecraftServer implements ICommandSender, Runnable, IPlay
         {
             var8.enableBonusChest();
         }
+        
+        server.setWorldRegistry(new BukkitWorldRegistry(var7)); // LavaBukkit
 
         WorldServer overWorld = (isDemo() ? new DemoWorldServer(this, var7, par2Str, 0, theProfiler) : new WorldServer(this, var7, par2Str, 0, var8, theProfiler));
         for (int dim : DimensionManager.getStaticDimensionIDs())
@@ -345,6 +360,8 @@ public abstract class MinecraftServer implements ICommandSender, Runnable, IPlay
     {
         this.currentTask = null;
         this.percentDone = 0;
+        
+        this.server.enablePlugins(org.bukkit.plugin.PluginLoadOrder.POSTWORLD); // CraftBukkit
     }
 
     /**
@@ -389,6 +406,12 @@ public abstract class MinecraftServer implements ICommandSender, Runnable, IPlay
         if (!this.worldIsBeingDeleted)
         {
             logger.info("Stopping server");
+            
+            // CraftBukkit start
+            if (this.server != null) {
+                this.server.disablePlugins();
+            }
+            // CraftBukkit end
 
             if (this.getNetworkThread() != null)
             {
@@ -470,6 +493,7 @@ public abstract class MinecraftServer implements ICommandSender, Runnable, IPlay
 
                     if (var7 > 2000L && var1 - this.timeOfLastWarning >= 15000L)
                     {
+                    	if (this.server.getWarnOnOverload()) // CraftBukkit - Added option to suppress warning messages
                         logger.warning("Can\'t keep up! Did the system time change, or is the server overloaded?");
                         var7 = 2000L;
                         this.timeOfLastWarning = var1;
@@ -598,7 +622,7 @@ public abstract class MinecraftServer implements ICommandSender, Runnable, IPlay
         this.theProfiler.startSection("root");
         this.updateTimeLightAndEntities();
 
-        if (this.tickCounter % 900 == 0)
+        if (this.autosavePeriod > 0 && (this.tickCounter % this.autosavePeriod) == 0) // CraftBukkit
         {
             this.theProfiler.startSection("save");
             this.serverConfigManager.saveAllPlayerData();
@@ -638,6 +662,17 @@ public abstract class MinecraftServer implements ICommandSender, Runnable, IPlay
     {
         this.theProfiler.startSection("levels");
         int var1;
+        
+        // CraftBukkit start - only send timeupdates to the people in that world
+        this.server.getScheduler().mainThreadHeartbeat(this.tickCounter);
+        
+        // Send timeupdates to everyone, it will get the right time from the world the player is in.
+        if (this.tickCounter % 20 == 0) {
+        	List<EntityPlayerMP> players = getConfigurationManager().playerEntityList;
+            for(EntityPlayerMP ply : players) {
+            	ply.playerNetServerHandler.sendPacketToPlayer(new Packet4UpdateTime(ply.worldObj.getTotalWorldTime(), ply.getPlayerTime())); // Add support for per player time
+            }
+        }
 
         Integer[] ids = DimensionManager.getIDs();
         for (int x = 0; x < ids.length; x++)
@@ -645,7 +680,7 @@ public abstract class MinecraftServer implements ICommandSender, Runnable, IPlay
             int id = ids[x];
             long var2 = System.nanoTime();
 
-            if (id == 0 || this.getAllowNether())
+            //if (id == 0 || this.getAllowNether()) // CraftBukkit
             {
                 WorldServer var4 = DimensionManager.getWorld(id);
                 this.theProfiler.startSection(var4.getWorldInfo().getWorldName());
@@ -653,12 +688,14 @@ public abstract class MinecraftServer implements ICommandSender, Runnable, IPlay
                 var4.getWorldVec3Pool().clear();
                 this.theProfiler.endSection();
 
+                /* CraftBukkit start - Drop global time updates
                 if (this.tickCounter % 20 == 0)
                 {
                     this.theProfiler.startSection("timeSync");
                     this.serverConfigManager.sendPacketToAllPlayersInDimension(new Packet4UpdateTime(var4.getTotalWorldTime(), var4.getWorldTime()), var4.provider.dimensionId);
                     this.theProfiler.endSection();
                 }
+                // CraftBukkit end */
 
                 this.theProfiler.startSection("tick");
                 FMLCommonHandler.instance().onPreWorldTick(var4);

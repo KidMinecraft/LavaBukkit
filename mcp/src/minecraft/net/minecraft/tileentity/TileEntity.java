@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 
+import org.bukkit.inventory.InventoryHolder;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.TileEntityRecordPlayer;
 import net.minecraft.crash.CrashReportCategory;
@@ -346,4 +348,15 @@ public class TileEntity
     {
         return true;
     }
+
+    // LavaBukkit start
+	public InventoryHolder getBlockStateCB() {
+		org.bukkit.block.Block block = worldObj.getWorld().getBlockAt(xCoord, yCoord, zCoord);
+		org.bukkit.block.BlockState state = block.getState();
+		if(state instanceof InventoryHolder)
+			return (InventoryHolder)state;
+		else
+			return null;
+	}
+	// LavaBukkit end
 }

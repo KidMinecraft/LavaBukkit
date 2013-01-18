@@ -3,6 +3,10 @@ package net.minecraft.item;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import java.util.List;
+
+import org.bukkit.Bukkit;
+import org.bukkit.event.server.MapInitializeEvent;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.material.MapColor;
 import net.minecraft.entity.Entity;
@@ -55,6 +59,11 @@ public class ItemMap extends ItemMapBase
             var4.dimension = par2World.provider.dimensionId;
             var4.markDirty();
             par2World.setItemData(var3, var4);
+            
+            // CraftBukkit start
+            MapInitializeEvent event = new MapInitializeEvent(var4.mapView);
+            Bukkit.getServer().getPluginManager().callEvent(event);
+            // CraftBukkit end
         }
 
         return var4;
@@ -330,6 +339,13 @@ public class ItemMap extends ItemMapBase
             var5.dimension = var4.dimension;
             var5.markDirty();
             par2World.setItemData("map_" + par1ItemStack.getItemDamage(), var5);
+            
+            // CraftBukkit start
+            if(!par2World.isRemote) {
+	            MapInitializeEvent event = new MapInitializeEvent(var5.mapView);
+	            Bukkit.getServer().getPluginManager().callEvent(event);
+            }
+            // CraftBukkit end
         }
     }
 

@@ -3,6 +3,10 @@ package net.minecraft.item;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import java.util.List;
+
+import org.bukkit.block.BlockState;
+import org.bukkit.craftbukkit.block.CraftBlockState;
+
 import net.minecraft.block.Block;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.Entity;
@@ -36,7 +40,7 @@ public class ItemBlock extends Item
      */
     public boolean onItemUse(ItemStack par1ItemStack, EntityPlayer par2EntityPlayer, World par3World, int par4, int par5, int par6, int par7, float par8, float par9, float par10)
     {
-        int var11 = par3World.getBlockId(par4, par5, par6);
+    	int var11 = par3World.getBlockId(par4, par5, par6);
 
         if (var11 == Block.snow.blockID)
         {
@@ -88,25 +92,54 @@ public class ItemBlock extends Item
         {
             return false;
         }
-        else if (par3World.canPlaceEntityOnSide(this.blockID, par4, par5, par6, false, par7, par2EntityPlayer))
+        else if(par3World.canPlaceEntityOnSide(this.blockID, par4, par5, par6, false, par7, par2EntityPlayer))
         {
             Block var12 = Block.blocksList[this.blockID];
             int var13 = this.getMetadata(par1ItemStack.getItemDamage());
             int var14 = Block.blocksList[this.blockID].onBlockPlaced(par3World, par4, par5, par6, par7, par8, par9, par10, var13);
+            
+            // CraftBukkit start - redirect to common function handler
 
-            if (placeBlockAt(par1ItemStack, par2EntityPlayer, par3World, par4, par5, par6, par7, par8, par9, par10, var14))
+            /*if (placeBlockAt(par1ItemStack, par2EntityPlayer, par3World, par4, par5, par6, par7, par8, par9, par10, var14))
             {
                 par3World.playSoundEffect((double)((float)par4 + 0.5F), (double)((float)par5 + 0.5F), (double)((float)par6 + 0.5F), var12.stepSound.getPlaceSound(), (var12.stepSound.getVolume() + 1.0F) / 2.0F, var12.stepSound.getPitch() * 0.8F);
                 --par1ItemStack.stackSize;
-            }
-
-            return true;
+            }*/
+            
+            return processBlockPlace(par3World, par2EntityPlayer, par1ItemStack, par4, par5, par6, par7, itemID, var13, par8, par9, par10);
+            // CraftBukkit end
         }
         else
         {
             return false;
         }
     }
+    
+    // CraftBukkit start - add method to process block placement
+    static boolean processBlockPlace(final World world, final EntityPlayer entityhuman, final ItemStack itemstack, final int x, final int y, final int z, final int side, final int id, final int data, float hitX, float hitY, float hitZ) {
+    	if(!world.isRemote) {
+	        BlockState blockstate = org.bukkit.craftbukkit.block.CraftBlockState.getBlockState(world, x, y, z);
+	    	
+	    	// LavaBukkit note - should set block here, but we can't do that with placeInBlock 
+	        
+	        org.bukkit.event.block.BlockPlaceEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callBlockPlaceEvent(world, entityhuman, blockstate, x, y, z);
+	        if (event.isCancelled() || !event.canBuild()) {
+	            blockstate.update(true);
+	            return false;
+	        }
+    	}
+
+        Block var12 = Block.blocksList[id];
+        if (((ItemBlock)Item.itemsList[id]).placeBlockAt(itemstack, entityhuman, world, x, y, z, side, hitX, hitY, hitZ, data))
+        {
+            world.playSoundEffect(x + 0.5, y + 0.5, z + 0.5, var12.stepSound.getPlaceSound(), (var12.stepSound.getVolume() + 1.0F) / 2.0F, var12.stepSound.getPitch() * 0.8F);
+            if(itemstack != null)
+            	--itemstack.stackSize;
+        }
+
+        return true;
+    }
+    // CraftBukkit end
 
     @SideOnly(Side.CLIENT)
 

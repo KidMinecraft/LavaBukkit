@@ -2,6 +2,8 @@ package net.minecraft.entity.item;
 
 import java.util.Iterator;
 
+import org.bukkit.event.player.PlayerPickupItemEvent;
+
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.Event.Result;
 import net.minecraftforge.event.entity.item.ItemExpireEvent;
@@ -58,6 +60,11 @@ public class EntityItem extends Entity
     public EntityItem(World par1World, double par2, double par4, double par6, ItemStack par8ItemStack)
     {
         this(par1World, par2, par4, par6);
+        // CraftBukkit start - Can't set null items in the datawatcher
+        if (par8ItemStack == null || par8ItemStack.getItem() == null) {
+            return;
+        }
+        // CraftBukkit end
         this.func_92013_a(par8ItemStack);
         this.lifespan = (par8ItemStack.getItem() == null ? 6000 : par8ItemStack.getItem().getEntityLifespan(par8ItemStack, par1World));
     }
@@ -312,7 +319,15 @@ public class EntityItem extends Entity
         this.health = par1NBTTagCompound.getShort("Health") & 255;
         this.age = par1NBTTagCompound.getShort("Age");
         NBTTagCompound var2 = par1NBTTagCompound.getCompoundTag("Item");
-        this.func_92013_a(ItemStack.loadItemStackFromNBT(var2));
+        
+        // CraftBukkit start
+        ItemStack itemstack = ItemStack.loadItemStackFromNBT(var2);
+        if (itemstack != null) {
+            this.func_92013_a(itemstack);
+        } else {
+            this.setDead();
+        }
+        // CraftBukkit end
 
         ItemStack item = getDataWatcher().getWatchableObjectItemStack(10);
 
@@ -433,4 +448,13 @@ public class EntityItem extends Entity
         this.getDataWatcher().updateObject(10, par1ItemStack);
         this.getDataWatcher().func_82708_h(10);
     }
+
+    // LavaBukkit start
+	public ItemStack getItem() {
+		return func_92014_d();
+	}
+	public void setItem(ItemStack is) {
+		func_92013_a(is);
+	}
+	// LavaBukkit end
 }

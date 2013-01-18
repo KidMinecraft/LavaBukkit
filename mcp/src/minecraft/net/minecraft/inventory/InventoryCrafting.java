@@ -2,6 +2,7 @@ package net.minecraft.inventory;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.crafting.IRecipe;
 
 public class InventoryCrafting implements IInventory
 {
@@ -15,6 +16,11 @@ public class InventoryCrafting implements IInventory
      * Class containing the callbacks for the events on_GUIClosed and on_CraftMaxtrixChanged.
      */
     private Container eventHandler;
+
+    // CraftBukkit start
+	public IInventory resultInventory;
+	public IRecipe currentRecipe;
+	// CraftBukkit end
 
     public InventoryCrafting(Container par1Container, int par2, int par3)
     {

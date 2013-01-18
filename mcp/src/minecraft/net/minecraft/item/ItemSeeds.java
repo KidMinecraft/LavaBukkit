@@ -1,5 +1,7 @@
 package net.minecraft.item;
 
+import org.bukkit.craftbukkit.block.CraftBlockState;
+
 import net.minecraft.block.Block;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.player.EntityPlayer;
@@ -44,7 +46,21 @@ public class ItemSeeds extends Item implements IPlantable
 
             if (soil != null && soil.canSustainPlant(par3World, par4, par5, par6, ForgeDirection.UP, this) && par3World.isAirBlock(par4, par5 + 1, par6))
             {
-                par3World.setBlockWithNotify(par4, par5 + 1, par6, this.blockType);
+            	CraftBlockState blockState = par3World.isRemote ? null : CraftBlockState.getBlockState(par3World, par4, par5 + 1, par6); // CraftBukkit
+            	
+            	par3World.setBlockWithNotify(par4, par5 + 1, par6, this.blockType);
+                
+            	// CraftBukkit start - seeds
+            	if(!par3World.isRemote) {
+	                org.bukkit.event.block.BlockPlaceEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callBlockPlaceEvent(par3World, par2EntityPlayer, blockState, par4, par5, par6);
+	
+	                if (event.isCancelled() || !event.canBuild()) {
+	                    event.getBlockPlaced().setTypeId(0);
+	                    return false;
+	                }
+            	}
+                // CraftBukkit end
+                
                 --par1ItemStack.stackSize;
                 return true;
             }

@@ -1,5 +1,9 @@
 package net.minecraft.item;
 
+import org.bukkit.entity.Player;
+import org.bukkit.event.hanging.HangingPlaceEvent;
+import org.bukkit.event.painting.PaintingPlaceEvent;
+
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.EntityHanging;
 import net.minecraft.entity.item.EntityItemFrame;
@@ -48,6 +52,27 @@ public class ItemHangingEntity extends Item
                 {
                     if (!par3World.isRemote)
                     {
+                    	// CraftBukkit start
+                        Player who = (par2EntityPlayer == null) ? null : (Player) par2EntityPlayer.getBukkitEntity();
+                        org.bukkit.block.Block blockClicked = par3World.getWorld().getBlockAt(par4, par5, par6);
+                        org.bukkit.block.BlockFace blockFace = org.bukkit.craftbukkit.block.CraftBlock.notchToBlockFace(par7);
+
+                        HangingPlaceEvent event = new HangingPlaceEvent((org.bukkit.entity.Hanging) var12.getBukkitEntity(), who, blockClicked, blockFace);
+                        par3World.getServer().getPluginManager().callEvent(event);
+
+                        PaintingPlaceEvent paintingEvent = null;
+                        if(var12 instanceof EntityPainting) {
+                            // Fire old painting event until it can be removed
+                            paintingEvent = new PaintingPlaceEvent((org.bukkit.entity.Painting) var12.getBukkitEntity(), who, blockClicked, blockFace);
+                            paintingEvent.setCancelled(event.isCancelled());
+                            par3World.getServer().getPluginManager().callEvent(paintingEvent);
+                        }
+
+                        if (event.isCancelled() || (paintingEvent != null && paintingEvent.isCancelled())) {
+                            return false;
+                        }
+                        // CraftBukkit end
+                        
                         par3World.spawnEntityInWorld(var12);
                     }
 

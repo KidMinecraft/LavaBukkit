@@ -26,10 +26,20 @@ public class Packet56MapChunks extends Packet
     /** total size of the compressed data */
     private int dataLength;
     private boolean field_92024_h;
-    private static byte[] chunkDataNotCompressed = new byte[0];
+    private byte[] chunkDataNotCompressed = new byte[0]; // CraftBukkit - remove static
     private int maxLen = 0;
 
     private Semaphore deflateGate;
+    
+    // CraftBukkit start
+    static final ThreadLocal<Deflater> localDeflater = new ThreadLocal<Deflater>() {
+        @Override
+        protected Deflater initialValue() {
+            // Don't use higher compression level, slows things down too much
+            return new Deflater(6);
+        }
+    };
+    // CraftBukkit end
 
     public Packet56MapChunks() {}
 
@@ -69,8 +79,11 @@ public class Packet56MapChunks extends Packet
             offset += field_73584_f[x].length;
         }
 
-        Deflater var11 = new Deflater(-1);
-
+        // CraftBukkit start - use thread-local deflater
+        Deflater var11 = localDeflater.get();
+        var11.reset();
+        // CraftBukkit end
+        
         try
         {
             var11.setInput(data, 0, maxLen);

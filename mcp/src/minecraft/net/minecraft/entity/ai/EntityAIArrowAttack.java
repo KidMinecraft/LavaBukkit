@@ -1,5 +1,8 @@
 package net.minecraft.entity.ai;
 
+import org.bukkit.event.entity.EntityTargetEvent;
+
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.IRangedAttackMob;
 
@@ -77,7 +80,7 @@ public class EntityAIArrowAttack extends EntityAIBase
      */
     public void resetTask()
     {
-        this.attackTarget = null;
+    	this.attackTarget = null;
         this.field_75318_f = 0;
         this.rangedAttackTime = this.maxRangedAttackTime / 2;
     }

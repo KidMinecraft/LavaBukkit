@@ -3,9 +3,13 @@ package net.minecraft.block;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import java.util.Random;
+
+import org.bukkit.event.entity.EntityInteractEvent;
+
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
@@ -48,8 +52,24 @@ public class BlockRedstoneOre extends Block
      */
     public void onEntityWalking(World par1World, int par2, int par3, int par4, Entity par5Entity)
     {
-        this.glow(par1World, par2, par3, par4);
-        super.onEntityWalking(par1World, par2, par3, par4, par5Entity);
+        // CraftBukkit start
+    	if(par1World.isRemote) return;
+    	
+        if (par5Entity instanceof EntityPlayerMP) {
+            org.bukkit.event.player.PlayerInteractEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerInteractEvent((EntityPlayerMP) par5Entity, org.bukkit.event.block.Action.PHYSICAL, par2, par3, par4, -1, null);
+            if (!event.isCancelled()) {
+            	this.glow(par1World, par2, par3, par4);
+                super.onEntityWalking(par1World, par2, par3, par4, par5Entity);
+            }
+        } else {
+            EntityInteractEvent event = new EntityInteractEvent(par5Entity.getBukkitEntity(), par1World.getWorld().getBlockAt(par2, par3, par4));
+            par1World.getServer().getPluginManager().callEvent(event);
+            if (!event.isCancelled()) {
+            	this.glow(par1World, par2, par3, par4);
+                super.onEntityWalking(par1World, par2, par3, par4, par5Entity);
+            }
+        }
+        // CraftBukkit end
     }
 
     /**
@@ -116,11 +136,19 @@ public class BlockRedstoneOre extends Block
     {
         super.dropBlockAsItemWithChance(par1World, par2, par3, par4, par5, par6, par7);
 
+        /* CraftBukkit start - delegate to getExpDrop
         if (this.idDropped(par5, par1World.rand, par7) != this.blockID)
         {
             int var8 = 1 + par1World.rand.nextInt(5);
             this.dropXpOnBlockBreak(par1World, par2, par3, par4, var8);
-        }
+        } */
+    }
+    
+    public int getExpDrop(World par1World, int par5, int par7) {
+    	if (this.idDropped(par5, par1World.rand, par7) != this.blockID)
+            return 1 + par1World.rand.nextInt(5);
+        return 0;
+        // CraftBukkit end
     }
 
     @SideOnly(Side.CLIENT)

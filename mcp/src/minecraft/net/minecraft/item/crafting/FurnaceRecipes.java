@@ -13,9 +13,9 @@ public class FurnaceRecipes
     private static final FurnaceRecipes smeltingBase = new FurnaceRecipes();
 
     /** The list of smelting results. */
-    private Map smeltingList = new HashMap();
+    public Map smeltingList = new HashMap(); // CraftBukkit - private -> public
     private Map experienceList = new HashMap();
-    private HashMap<List<Integer>, ItemStack> metaSmeltingList = new HashMap<List<Integer>, ItemStack>();
+    public HashMap<List<Integer>, ItemStack> metaSmeltingList = new HashMap<List<Integer>, ItemStack>(); // CraftBukkit - private -> public
     private HashMap<List<Integer>, Float> metaExperience = new HashMap<List<Integer>, Float>();
 
     /**

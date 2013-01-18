@@ -7,6 +7,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import net.minecraft.client.Minecraft;
+
 public class Profiler
 {
     /** List of parent sections */
@@ -33,6 +35,8 @@ public class Profiler
         this.profilingSection = "";
         this.sectionList.clear();
     }
+    
+    private double debugTemp;
 
     /**
      * Start section
@@ -49,6 +53,8 @@ public class Profiler
             this.profilingSection = this.profilingSection + par1Str;
             this.sectionList.add(this.profilingSection);
             this.timestampList.add(Long.valueOf(System.nanoTime()));
+            
+            debugTemp = Minecraft.getMinecraft().thePlayer.motionY;
         }
     }
 
@@ -59,6 +65,12 @@ public class Profiler
     {
         if (this.profilingEnabled)
         {
+        	double n = Minecraft.getMinecraft().thePlayer.motionY;
+        	if(n > 0 && n > debugTemp) {
+        		System.out.println("Y increased from "+debugTemp+" to "+n+" during "+profilingSection);
+        		debugTemp = n;
+        	}
+        	
             long var1 = System.nanoTime();
             long var3 = ((Long)this.timestampList.remove(this.timestampList.size() - 1)).longValue();
             this.sectionList.remove(this.sectionList.size() - 1);

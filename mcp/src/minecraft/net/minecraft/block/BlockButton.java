@@ -2,6 +2,9 @@ package net.minecraft.block;
 
 import java.util.List;
 import java.util.Random;
+
+import org.bukkit.event.block.BlockRedstoneEvent;
+
 import net.minecraft.block.material.Material;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.Entity;
@@ -249,6 +252,21 @@ public class BlockButton extends Block
         }
         else
         {
+            // CraftBukkit start
+        	if(!par1World.isRemote) {
+	            org.bukkit.block.Block block = par1World.getWorld().getBlockAt(par2, par3, par4);
+	            int old = (var12 != 8) ? 1 : 0;
+	            int current = (var12 == 8) ? 1 : 0;
+	
+	            BlockRedstoneEvent eventRedstone = new BlockRedstoneEvent(block, old, current);
+	            par1World.getServer().getPluginManager().callEvent(eventRedstone);
+	
+	            if ((eventRedstone.getNewCurrent() > 0) != (var12 == 8)) {
+	                return true;
+	            }
+        	}
+            // CraftBukkit end
+            
             par1World.setBlockMetadataWithNotify(par2, par3, par4, var11 + var12);
             par1World.markBlockRangeForRenderUpdate(par2, par3, par4, par2, par3, par4);
             par1World.playSoundEffect((double)par2 + 0.5D, (double)par3 + 0.5D, (double)par4 + 0.5D, "random.click", 0.3F, 0.6F);
@@ -320,6 +338,17 @@ public class BlockButton extends Block
 
             if ((var6 & 8) != 0)
             {
+                // CraftBukkit start
+                org.bukkit.block.Block block = par1World.getWorld().getBlockAt(par2, par3, par4);
+
+                BlockRedstoneEvent eventRedstone = new BlockRedstoneEvent(block, 1, 0);
+                par1World.getServer().getPluginManager().callEvent(eventRedstone);
+
+                if (eventRedstone.getNewCurrent() > 0) {
+                    return;
+                }
+                // CraftBukkit end
+                
                 if (this.sensible)
                 {
                     this.func_82535_o(par1World, par2, par3, par4);

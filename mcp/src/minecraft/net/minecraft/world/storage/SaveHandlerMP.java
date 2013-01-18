@@ -3,6 +3,8 @@ package net.minecraft.world.storage;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import java.io.File;
+import java.util.UUID;
+
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.MinecraftException;
 import net.minecraft.world.WorldProvider;
@@ -70,4 +72,7 @@ public class SaveHandlerMP implements ISaveHandler
     {
         return "none";
     }
+
+    // LavaBukkit
+	@Override public UUID getUUID() {return null;}
 }

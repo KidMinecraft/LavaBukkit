@@ -3,6 +3,9 @@ package net.minecraft.block;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import java.util.Random;
+
+import org.bukkit.craftbukkit.event.CraftEventFactory;
+
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.player.EntityPlayer;
@@ -68,10 +71,22 @@ public class BlockRedstoneRepeater extends BlockDirectional
 
             if (this.isRepeaterPowered && !var8)
             {
+            	// CraftBukkit start
+                if (CraftEventFactory.callRedstoneChange(par1World, par2, par3, par4, 15, 0).getNewCurrent() != 0) {
+                    return;
+                }
+                // CraftBukkit end
+                
                 par1World.setBlockAndMetadataWithNotify(par2, par3, par4, Block.redstoneRepeaterIdle.blockID, var6);
             }
             else if (!this.isRepeaterPowered)
             {
+            	// CraftBukkit start
+                if (CraftEventFactory.callRedstoneChange(par1World, par2, par3, par4, 0, 15).getNewCurrent() != 15) {
+                    return;
+                }
+                // CraftBukkit end
+                
                 par1World.setBlockAndMetadataWithNotify(par2, par3, par4, Block.redstoneRepeaterActive.blockID, var6);
 
                 if (!var8)

@@ -8,6 +8,8 @@ import net.minecraft.world.World;
 
 public abstract class EntityAgeable extends EntityCreature
 {
+	public boolean ageLocked = false; // CraftBukkit
+	
     public EntityAgeable(World par1World)
     {
         super(par1World);
@@ -44,6 +46,14 @@ public abstract class EntityAgeable extends EntityCreature
                         {
                             par1EntityPlayer.inventory.setInventorySlotContents(par1EntityPlayer.inventory.currentItem, (ItemStack)null);
                         }
+                        
+                        // CraftBukkit start
+	                    if(!par1EntityPlayer.capabilities.isCreativeMode) {
+	                    	var2.stackSize--;
+	                    	if(var2.stackSize == 0)
+	                    		par1EntityPlayer.inventory.setInventorySlotContents(par1EntityPlayer.inventory.currentItem, null);
+	                    }
+	                    // CraftBukkit end
                     }
                 }
             }

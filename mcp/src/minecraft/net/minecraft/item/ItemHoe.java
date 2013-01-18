@@ -1,7 +1,5 @@
 package net.minecraft.item;
 
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.block.Block;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.player.EntityPlayer;
@@ -9,6 +7,11 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.Event.Result;
 import net.minecraftforge.event.entity.player.UseHoeEvent;
+
+import org.bukkit.craftbukkit.block.CraftBlockState;
+
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
 public class ItemHoe extends Item
 {
@@ -56,6 +59,8 @@ public class ItemHoe extends Item
             }
             else
             {
+            	CraftBlockState blockState = CraftBlockState.getBlockState(par3World, par4, par5, par6); // CraftBukkit
+            	
                 Block var13 = Block.tilledField;
                 par3World.playSoundEffect((double)((float)par4 + 0.5F), (double)((float)par5 + 0.5F), (double)((float)par6 + 0.5F), var13.stepSound.getStepSound(), (var13.stepSound.getVolume() + 1.0F) / 2.0F, var13.stepSound.getPitch() * 0.8F);
 
@@ -65,6 +70,15 @@ public class ItemHoe extends Item
                 }
                 else
                 {
+                	// CraftBukkit start - Hoes - blockface -1 for 'SELF'
+                    org.bukkit.event.block.BlockPlaceEvent event2 = org.bukkit.craftbukkit.event.CraftEventFactory.callBlockPlaceEvent(par3World, par2EntityPlayer, blockState, par4, par5, par6);
+
+                    if (event2.isCancelled() || !event2.canBuild()) {
+                        event2.getBlockPlaced().setTypeId(blockState.getTypeId());
+                        return false;
+                    }
+                    // CraftBukkit end
+                    
                     par3World.setBlockWithNotify(par4, par5, par6, var13.blockID);
                     par1ItemStack.damageItem(1, par2EntityPlayer);
                     return true;

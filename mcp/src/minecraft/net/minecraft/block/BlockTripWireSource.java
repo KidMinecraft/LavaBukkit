@@ -1,6 +1,9 @@
 package net.minecraft.block;
 
 import java.util.Random;
+
+import org.bukkit.event.block.BlockRedstoneEvent;
+
 import net.minecraft.block.material.Material;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.util.AxisAlignedBB;
@@ -239,6 +242,19 @@ public class BlockTripWireSource extends Block
             this.notifyNeighborOfChange(par1World, var21, par3, var22, var23);
             this.playSoundEffect(par1World, var21, par3, var22, var13, var14, var11, var12);
         }
+        
+        // CraftBukkit start
+        if(!par1World.isRemote) {
+	        org.bukkit.block.Block block = par1World.getWorld().getBlockAt(par2, par3, par4);
+	
+	        BlockRedstoneEvent eventRedstone = new BlockRedstoneEvent(block, 1, 0);
+	        par1World.getServer().getPluginManager().callEvent(eventRedstone);
+	
+	        if (eventRedstone.getNewCurrent() > 0) {
+	            return;
+	        }
+        }
+        // CraftBukkit end
 
         this.playSoundEffect(par1World, par2, par3, par4, var13, var14, var11, var12);
 

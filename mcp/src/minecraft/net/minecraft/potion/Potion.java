@@ -4,6 +4,7 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.projectile.EntityPotion;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.StringUtils;
 
@@ -160,6 +161,13 @@ public class Potion
      */
     public void affectEntity(EntityLiving par1EntityLiving, EntityLiving par2EntityLiving, int par3, double par4)
     {
+    	// CraftBukkit start - delegate; we need EntityPotion
+        affectEntity(par1EntityLiving, par2EntityLiving, par3, par4, null);
+    }
+    
+    public void affectEntity(EntityLiving par1EntityLiving, EntityLiving par2EntityLiving, int par3, double par4, EntityPotion potion)
+    {
+    	// CraftBukkit end
         int var6;
 
         if ((this.id != heal.id || par2EntityLiving.isEntityUndead()) && (this.id != harm.id || !par2EntityLiving.isEntityUndead()))
@@ -174,7 +182,8 @@ public class Potion
                 }
                 else
                 {
-                    par2EntityLiving.attackEntityFrom(DamageSource.causeIndirectMagicDamage(par2EntityLiving, par1EntityLiving), var6);
+                	// CraftBukkit - The "damager" needs to be the potion
+                    par2EntityLiving.attackEntityFrom(DamageSource.causeIndirectMagicDamage(potion != null ? potion : par2EntityLiving, par1EntityLiving), var6);
                 }
             }
         }

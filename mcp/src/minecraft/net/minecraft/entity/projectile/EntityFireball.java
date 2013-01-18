@@ -3,6 +3,9 @@ package net.minecraft.entity.projectile;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import java.util.List;
+
+import org.bukkit.event.entity.ProjectileHitEvent;
+
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.nbt.NBTTagCompound;
@@ -28,6 +31,9 @@ public abstract class EntityFireball extends Entity
     public double accelerationX;
     public double accelerationY;
     public double accelerationZ;
+    
+    public float yield = 1; // CraftBukkit
+    public boolean isIncendiary = true; // CraftBukkit
 
     public EntityFireball(World par1World)
     {
@@ -71,6 +77,12 @@ public abstract class EntityFireball extends Entity
         this.setPosition(this.posX, this.posY, this.posZ);
         this.yOffset = 0.0F;
         this.motionX = this.motionY = this.motionZ = 0.0D;
+        // CraftBukkit start - (added setDirection method)
+        this.setDirection(par3, par5, par7);
+    }
+
+    public void setDirection(double par3, double par5, double par7) {
+        // CraftBukkit end
         par3 += this.rand.nextGaussian() * 0.4D;
         par5 += this.rand.nextGaussian() * 0.4D;
         par7 += this.rand.nextGaussian() * 0.4D;
@@ -149,7 +161,7 @@ public abstract class EntityFireball extends Entity
 
                     if (var12 != null)
                     {
-                        double var13 = var15.distanceTo(var12.hitVec);
+                        double var13 = var15.squareDistanceTo(var12.hitVec); // CraftBukkit: distanceTo -> squareDistanceTo
 
                         if (var13 < var6 || var6 == 0.0D)
                         {
@@ -168,6 +180,13 @@ public abstract class EntityFireball extends Entity
             if (var3 != null)
             {
                 this.onImpact(var3);
+                
+                // CraftBukkit start
+                if (this.isDead && !worldObj.isRemote) {
+                    ProjectileHitEvent phe = new ProjectileHitEvent((org.bukkit.entity.Projectile) this.getBukkitEntity());
+                    this.worldObj.getServer().getPluginManager().callEvent(phe);
+                }
+                // CraftBukkit end
             }
 
             this.posX += this.motionX;
@@ -245,7 +264,8 @@ public abstract class EntityFireball extends Entity
         par1NBTTagCompound.setShort("zTile", (short)this.zTile);
         par1NBTTagCompound.setByte("inTile", (byte)this.inTile);
         par1NBTTagCompound.setByte("inGround", (byte)(this.inGround ? 1 : 0));
-        par1NBTTagCompound.setTag("direction", this.newDoubleNBTList(new double[] {this.motionX, this.motionY, this.motionZ}));
+        // CraftBukkit - Fix direction being mismapped to invalid variables - direction -> power, motion -> acceleration
+        par1NBTTagCompound.setTag("power", this.newDoubleNBTList(new double[] {this.accelerationX, this.accelerationY, this.accelerationZ}));
     }
 
     /**
@@ -259,12 +279,14 @@ public abstract class EntityFireball extends Entity
         this.inTile = par1NBTTagCompound.getByte("inTile") & 255;
         this.inGround = par1NBTTagCompound.getByte("inGround") == 1;
 
-        if (par1NBTTagCompound.hasKey("direction"))
+        // CraftBukkit start - direction -> power, motion -> acceleration
+        if (par1NBTTagCompound.hasKey("power"))
         {
-            NBTTagList var2 = par1NBTTagCompound.getTagList("direction");
-            this.motionX = ((NBTTagDouble)var2.tagAt(0)).data;
-            this.motionY = ((NBTTagDouble)var2.tagAt(1)).data;
-            this.motionZ = ((NBTTagDouble)var2.tagAt(2)).data;
+            NBTTagList var2 = par1NBTTagCompound.getTagList("power");
+            this.accelerationX = ((NBTTagDouble)var2.tagAt(0)).data;
+            this.accelerationY = ((NBTTagDouble)var2.tagAt(1)).data;
+            this.accelerationZ = ((NBTTagDouble)var2.tagAt(2)).data;
+            // CraftBukkit end
         }
         else
         {

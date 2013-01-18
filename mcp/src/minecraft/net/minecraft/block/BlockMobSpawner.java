@@ -45,8 +45,14 @@ public class BlockMobSpawner extends BlockContainer
     public void dropBlockAsItemWithChance(World par1World, int par2, int par3, int par4, int par5, float par6, int par7)
     {
         super.dropBlockAsItemWithChance(par1World, par2, par3, par4, par5, par6, par7);
+        /* CraftBukkit start - delegate to getExpDrop
         int var8 = 15 + par1World.rand.nextInt(15) + par1World.rand.nextInt(15);
-        this.dropXpOnBlockBreak(par1World, par2, par3, par4, var8);
+        this.dropXpOnBlockBreak(par1World, par2, par3, par4, var8);*/
+    }
+
+    public int getExpDrop(World world, int data, int enchantmentLevel) {
+        return 15 + world.rand.nextInt(15) + world.rand.nextInt(15);
+        // CraftBukkit end
     }
 
     /**

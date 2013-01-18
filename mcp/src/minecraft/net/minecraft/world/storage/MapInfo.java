@@ -62,21 +62,26 @@ public class MapInfo
         {
             int var3;
             int var10;
+            
+            org.bukkit.craftbukkit.map.RenderData render = this.mapDataObj.mapView.render((org.bukkit.craftbukkit.entity.CraftPlayer) entityplayerObj.getBukkitEntity()); // CraftBukkit
 
             if (--this.ticksUntilPlayerLocationMapUpdate < 0)
             {
                 this.ticksUntilPlayerLocationMapUpdate = 4;
-                var2 = new byte[this.mapDataObj.playersVisibleOnMap.size() * 3 + 1];
+                var2 = new byte[render.cursors.size() * 3 + 1]; // CraftBukkit
                 var2[0] = 1;
                 var3 = 0;
+                
+                // CraftBukkit start
+                for (var3 = 0; var3 < render.cursors.size(); ++var3) {
+                    org.bukkit.map.MapCursor cursor = render.cursors.get(var3);
+                    if (!cursor.isVisible()) continue;
 
-                for (Iterator var4 = this.mapDataObj.playersVisibleOnMap.values().iterator(); var4.hasNext(); ++var3)
-                {
-                    MapCoord var5 = (MapCoord)var4.next();
-                    var2[var3 * 3 + 1] = (byte)(var5.iconSize << 4 | var5.iconRotation & 15);
-                    var2[var3 * 3 + 2] = var5.centerX;
-                    var2[var3 * 3 + 3] = var5.centerZ;
+                    var2[var3 * 3 + 1] = (byte) (cursor.getRawType() << 4 | cursor.getDirection() & 15);
+                    var2[var3 * 3 + 2] = (byte) cursor.getX();
+                    var2[var3 * 3 + 3] = (byte) cursor.getY();
                 }
+                // CraftBukkit end
 
                 boolean var9 = !par1ItemStack.isOnItemFrame();
 
@@ -118,7 +123,7 @@ public class MapInfo
 
                     for (int var7 = 0; var7 < var6.length - 3; ++var7)
                     {
-                        var6[var7 + 3] = this.mapDataObj.colors[(var7 + var10) * 128 + var3];
+                        var6[var7 + 3] = render.buffer[(var7 + var10) * 128 + var3]; // CraftBukkit
                     }
 
                     this.field_76210_c[var3] = -1;

@@ -1,5 +1,10 @@
 package net.minecraft.item;
 
+import org.bukkit.craftbukkit.event.CraftEventFactory;
+import org.bukkit.craftbukkit.inventory.CraftItemStack;
+import org.bukkit.event.player.PlayerBucketEmptyEvent;
+import org.bukkit.event.player.PlayerBucketFillEvent;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.creativetab.CreativeTabs;
@@ -90,6 +95,16 @@ public class ItemBucket extends Item
 
                     if (par2World.getBlockMaterial(var13, var14, var15) == Material.water && par2World.getBlockMetadata(var13, var14, var15) == 0)
                     {
+                    	// CraftBukkit start
+                    	if(!par2World.isRemote) {
+	                        PlayerBucketFillEvent event2 = CraftEventFactory.callPlayerBucketFillEvent(par3EntityPlayer, var13, var14, var15, -1, par1ItemStack, Item.bucketWater);
+	
+	                        if (event2.isCancelled()) {
+	                            return par1ItemStack;
+	                        }
+                    	}
+                        // CraftBukkit end
+                        
                         par2World.setBlockWithNotify(var13, var14, var15, 0);
 
                         if (par3EntityPlayer.capabilities.isCreativeMode)
@@ -112,6 +127,16 @@ public class ItemBucket extends Item
 
                     if (par2World.getBlockMaterial(var13, var14, var15) == Material.lava && par2World.getBlockMetadata(var13, var14, var15) == 0)
                     {
+                    	// CraftBukkit start
+                    	if(!par2World.isRemote) {
+	                        PlayerBucketFillEvent event2 = CraftEventFactory.callPlayerBucketFillEvent(par3EntityPlayer, var13, var14, var15, -1, par1ItemStack, Item.bucketLava);
+	
+	                        if (event2.isCancelled()) {
+	                            return par1ItemStack;
+	                        }
+                    	}
+                        // CraftBukkit end
+                        
                         par2World.setBlockWithNotify(var13, var14, var15, 0);
 
                         if (par3EntityPlayer.capabilities.isCreativeMode)
@@ -136,8 +161,22 @@ public class ItemBucket extends Item
                 {
                     if (this.isFull < 0)
                     {
-                        return new ItemStack(Item.bucketEmpty);
+                    	// CraftBukkit start
+                    	if(!par2World.isRemote) {
+	                        PlayerBucketEmptyEvent event2 = CraftEventFactory.callPlayerBucketEmptyEvent(par3EntityPlayer, var13, var14, var15, var12.sideHit, par1ItemStack);
+	
+	                        if (event2.isCancelled()) {
+	                            return par1ItemStack;
+	                        }
+	                        
+	                        return CraftItemStack.asNMSCopy(event2.getItemStack());
+                    	}
+                    	
+                    	return new ItemStack(Item.bucketEmpty);
                     }
+
+                    int clickedX = var13, clickedY = var14, clickedZ = var15;
+                    // CraftBukkit end
 
                     if (var12.sideHit == 0)
                     {
@@ -168,6 +207,16 @@ public class ItemBucket extends Item
                     {
                         ++var13;
                     }
+                    
+                    // CraftBukkit start
+                    if(!par2World.isRemote) {
+	                    PlayerBucketEmptyEvent event2 = CraftEventFactory.callPlayerBucketEmptyEvent(par3EntityPlayer, clickedX, clickedY, clickedZ, var12.sideHit, par1ItemStack);
+	
+	                    if (event2.isCancelled()) {
+	                        return par1ItemStack;
+	                    }
+                    }
+                    // CraftBukkit end
 
                     if (!par3EntityPlayer.canPlayerEdit(var13, var14, var15, var12.sideHit, par1ItemStack))
                     {
@@ -182,7 +231,20 @@ public class ItemBucket extends Item
             }
             else if (this.isFull == 0 && var12.entityHit instanceof EntityCow)
             {
-                return new ItemStack(Item.bucketMilk);
+            	// CraftBukkit start - This codepath seems to be *NEVER* called
+            	if(!par2World.isRemote) {
+	                org.bukkit.Location loc = var12.entityHit.getBukkitEntity().getLocation();
+	                PlayerBucketFillEvent event2 = CraftEventFactory.callPlayerBucketFillEvent(par3EntityPlayer, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), -1, par1ItemStack, Item.bucketMilk);
+	
+	                if (event2.isCancelled()) {
+	                    return par1ItemStack;
+	                }
+	                
+	                return CraftItemStack.asNMSCopy(event2.getItemStack());
+            	}
+            	
+            	return new ItemStack(Item.bucketMilk);
+                // CraftBukkit end
             }
 
             return par1ItemStack;

@@ -1,15 +1,21 @@
 package net.minecraft.entity.item;
 
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
+
+import org.bukkit.event.entity.ExplosionPrimeEvent;
+
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
 public class EntityTNTPrimed extends Entity
 {
     /** How long the fuse is */
     public int fuse;
+    
+    public float yield = 4; // CraftBukkit
+    public boolean isIncendiary = false; // CraftBukkit
 
     public EntityTNTPrimed(World par1World)
     {
@@ -76,12 +82,13 @@ public class EntityTNTPrimed extends Entity
 
         if (this.fuse-- <= 0)
         {
-            this.setDead();
-
+        	// CraftBukkit start - Need to reverse the order of the explosion and the entity death so we have a location for the event
             if (!this.worldObj.isRemote)
             {
                 this.explode();
             }
+            this.setDead();
+            // CraftBukkit end
         }
         else
         {
@@ -91,8 +98,19 @@ public class EntityTNTPrimed extends Entity
 
     private void explode()
     {
-        float var1 = 4.0F;
-        this.worldObj.createExplosion((Entity)null, this.posX, this.posY, this.posZ, var1, true);
+    	// CraftBukkit start
+        // float var1 = 4.0F;
+
+        org.bukkit.craftbukkit.CraftServer server = this.worldObj.getServer();
+
+        ExplosionPrimeEvent event = new ExplosionPrimeEvent((org.bukkit.entity.Explosive) getBukkitEntity());
+        server.getPluginManager().callEvent(event);
+
+        if (!event.isCancelled()) {
+            // give 'this' instead of (Entity) null so we know what causes the damage
+            this.worldObj.createExplosion(this, this.posX, this.posY, this.posZ, event.getRadius(), event.getFire());
+        }
+        // CraftBukkit end
     }
 
     /**

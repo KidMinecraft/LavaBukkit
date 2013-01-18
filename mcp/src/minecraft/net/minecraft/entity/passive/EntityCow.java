@@ -1,5 +1,8 @@
 package net.minecraft.entity.passive;
 
+import org.bukkit.craftbukkit.event.CraftEventFactory;
+import org.bukkit.craftbukkit.inventory.CraftItemStack;
+
 import net.minecraft.entity.EntityAgeable;
 import net.minecraft.entity.ai.EntityAIFollowParent;
 import net.minecraft.entity.ai.EntityAILookIdle;
@@ -131,14 +134,25 @@ public class EntityCow extends EntityAnimal
 
         if (var2 != null && var2.itemID == Item.bucketEmpty.itemID)
         {
-            if (--var2.stackSize <= 0)
-            {
-                par1EntityPlayer.inventory.setInventorySlotContents(par1EntityPlayer.inventory.currentItem, new ItemStack(Item.bucketMilk));
-            }
-            else if (!par1EntityPlayer.inventory.addItemStackToInventory(new ItemStack(Item.bucketMilk)))
-            {
-                par1EntityPlayer.dropPlayerItem(new ItemStack(Item.bucketMilk.itemID, 1, 0));
-            }
+        	// CraftBukkit start
+        	if(!worldObj.isRemote) {
+	            org.bukkit.Location loc = this.getBukkitEntity().getLocation();
+	            org.bukkit.event.player.PlayerBucketFillEvent event = CraftEventFactory.callPlayerBucketFillEvent(par1EntityPlayer, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), -1, var2, Item.bucketMilk);
+	
+	            if (event.isCancelled()) {
+	                return false;
+	            }
+	            
+	            if (--var2.stackSize <= 0)
+	            {
+	                par1EntityPlayer.inventory.setInventorySlotContents(par1EntityPlayer.inventory.currentItem, CraftItemStack.asNMSCopy(event.getItemStack()));
+	            }
+	            else if (!par1EntityPlayer.inventory.addItemStackToInventory(CraftItemStack.asNMSCopy(event.getItemStack())))
+	            {
+	                par1EntityPlayer.dropPlayerItem(CraftItemStack.asNMSCopy(event.getItemStack()));
+	            }
+        	}
+        	// CraftBukkit end
 
             return true;
         }

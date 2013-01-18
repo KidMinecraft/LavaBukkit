@@ -1,7 +1,5 @@
 package net.minecraft.entity.monster;
 
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ai.EntityAIAttackOnCollide;
 import net.minecraft.entity.ai.EntityAIAvoidEntity;
@@ -20,6 +18,13 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.DamageSource;
 import net.minecraft.world.World;
 
+import org.bukkit.craftbukkit.event.CraftEventFactory;
+import org.bukkit.event.entity.CreeperPowerEvent.PowerCause;
+import org.bukkit.event.entity.ExplosionPrimeEvent;
+
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
+
 public class EntityCreeper extends EntityMob
 {
     /**
@@ -36,6 +41,8 @@ public class EntityCreeper extends EntityMob
 
     /** Explosion radius for this creeper. */
     private int explosionRadius = 3;
+    
+    private int record = -1; // CraftBukkit
 
     public EntityCreeper(World par1World)
     {
@@ -156,16 +163,18 @@ public class EntityCreeper extends EntityMob
                 {
                     boolean var2 = this.worldObj.getGameRules().getGameRuleBooleanValue("mobGriefing");
 
-                    if (this.getPowered())
-                    {
-                        this.worldObj.createExplosion(this, this.posX, this.posY, this.posZ, (float)(this.explosionRadius * 2), var2);
-                    }
-                    else
-                    {
-                        this.worldObj.createExplosion(this, this.posX, this.posY, this.posZ, (float)this.explosionRadius, var2);
-                    }
+                    // CraftBukkit start
+                    float radius = explosionRadius * (this.getPowered() ? 2 : 1);
 
-                    this.setDead();
+                    ExplosionPrimeEvent event = new ExplosionPrimeEvent(this.getBukkitEntity(), radius, false);
+                    this.worldObj.getServer().getPluginManager().callEvent(event);
+                    if (!event.isCancelled()) {
+                        this.worldObj.newExplosion(this, this.posX, this.posY, this.posZ, event.getRadius(), event.getFire(), var2);
+                        this.setDead();
+                    } else {
+                        this.timeSinceIgnited = 0;
+                    }
+                    // CraftBukkit end
                 }
             }
         }
@@ -194,14 +203,25 @@ public class EntityCreeper extends EntityMob
      */
     public void onDeath(DamageSource par1DamageSource)
     {
-        super.onDeath(par1DamageSource);
-
+    	// CraftBukkit start - super call to end, dropItem -> record=
         if (par1DamageSource.getEntity() instanceof EntitySkeleton)
         {
             int var2 = Item.record13.itemID + this.rand.nextInt(Item.recordWait.itemID - Item.record13.itemID + 1);
-            this.dropItem(var2, 1);
+            record = var2;
         }
+        
+        super.onDeath(par1DamageSource);
+        // CraftBukkit end
     }
+    
+	 // CraftBukkit start - added method
+	@Override
+	protected void dropFewItems(boolean par1, int par2) {
+		super.dropFewItems(par1, par2);
+		if(record != -1)
+			dropItem(record, 1);
+	}
+	// CraftBukkit end
 
     public boolean attackEntityAsMob(Entity par1Entity)
     {
@@ -256,6 +276,14 @@ public class EntityCreeper extends EntityMob
     public void onStruckByLightning(EntityLightningBolt par1EntityLightningBolt)
     {
         super.onStruckByLightning(par1EntityLightningBolt);
-        this.dataWatcher.updateObject(17, Byte.valueOf((byte)1));
+        // CraftBukkit start
+        if(CraftEventFactory.callCreeperPowerEvent(this, par1EntityLightningBolt, PowerCause.LIGHTNING).isCancelled())
+        	return;
+        setPowered(true);
+    }
+    
+    public void setPowered(boolean state) {
+        this.dataWatcher.updateObject(17, Byte.valueOf((byte)(state ? 1 : 0)));
+        // CraftBukkit end
     }
 }

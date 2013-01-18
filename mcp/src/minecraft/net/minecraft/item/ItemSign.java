@@ -1,5 +1,7 @@
 package net.minecraft.item;
 
+import org.bukkit.craftbukkit.block.CraftBlockState;
+
 import net.minecraft.block.Block;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.player.EntityPlayer;
@@ -32,6 +34,8 @@ public class ItemSign extends Item
         }
         else
         {
+        	int clickedX = par4, clickedY = par5, clickedZ = par6; // CraftBukkit
+        	
             if (par7 == 1)
             {
                 ++par5;
@@ -67,15 +71,29 @@ public class ItemSign extends Item
             }
             else
             {
+            	CraftBlockState blockState = par3World.isRemote ? null : CraftBlockState.getBlockState(par3World, par4, par5, par6); // CraftBukkit
+            
                 if (par7 == 1)
                 {
                     int var11 = MathHelper.floor_double((double)((par2EntityPlayer.rotationYaw + 180.0F) * 16.0F / 360.0F) + 0.5D) & 15;
-                    par3World.setBlockAndMetadataWithNotify(par4, par5, par6, Block.signPost.blockID, var11);
+                    // CraftBukkit start - sign
+                    par3World.setBlockAndMetadata(par4, par5, par6, Block.signPost.blockID, var11);
                 }
                 else
                 {
-                    par3World.setBlockAndMetadataWithNotify(par4, par5, par6, Block.signWall.blockID, par7);
+                    par3World.setBlockAndMetadata(par4, par5, par6, Block.signWall.blockID, par7);
                 }
+                
+                if(!par3World.isRemote) {
+	                org.bukkit.event.block.BlockPlaceEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callBlockPlaceEvent(par3World, par2EntityPlayer, blockState, clickedX, clickedY, clickedZ);
+	
+	                if (event.isCancelled() || !event.canBuild()) {
+	                    event.getBlockPlaced().setTypeIdAndData(blockState.getTypeId(), blockState.getRawData(), false);
+	                    return false;
+	                } else
+	                	par3World.notifyBlocksOfNeighborChange(par4, par5, par6, par7 == 1 ? Block.signPost.blockID : Block.signWall.blockID);
+                }
+                // CraftBukkit end
 
                 --par1ItemStack.stackSize;
                 TileEntitySign var12 = (TileEntitySign)par3World.getBlockTileEntity(par4, par5, par6);

@@ -315,6 +315,7 @@ public class TileEntityFurnace extends TileEntity implements IInventory, ISidedI
         {
             ItemStack var1 = FurnaceRecipes.smelting().getSmeltingResult(this.furnaceItemStacks[0]);
 
+            if(var1 == null); else // LavaBukkit - FurnaceSmeltEvent hook can return null
             if (this.furnaceItemStacks[2] == null)
             {
                 this.furnaceItemStacks[2] = var1.copy();

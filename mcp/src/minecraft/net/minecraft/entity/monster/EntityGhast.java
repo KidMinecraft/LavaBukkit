@@ -1,5 +1,8 @@
 package net.minecraft.entity.monster;
 
+import org.bukkit.craftbukkit.entity.CraftEntity;
+import org.bukkit.event.entity.EntityTargetEvent;
+
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityFlying;
 import net.minecraft.entity.player.EntityPlayer;
@@ -120,13 +123,42 @@ public class EntityGhast extends EntityFlying implements IMob
 
         if (this.targetedEntity != null && this.targetedEntity.isDead)
         {
-            this.targetedEntity = null;
+        	// CraftBukkit start
+        	if(!worldObj.isRemote) {
+	            EntityTargetEvent event = new EntityTargetEvent(this.getBukkitEntity(), null, EntityTargetEvent.TargetReason.TARGET_DIED);
+	            this.worldObj.getServer().getPluginManager().callEvent(event);
+	
+	            if (!event.isCancelled()) {
+	                if (event.getTarget() == null) {
+	                    this.targetedEntity = null;
+	                } else {
+	                    this.targetedEntity = ((CraftEntity) event.getTarget()).getHandle();
+	                }
+	            }
+        	}
+            // CraftBukkit end
         }
 
         if (this.targetedEntity == null || this.aggroCooldown-- <= 0)
         {
-            this.targetedEntity = this.worldObj.getClosestVulnerablePlayerToEntity(this, 100.0D);
-
+        	// CraftBukkit start
+        	if(!worldObj.isRemote) {
+	            Entity target = this.worldObj.getClosestVulnerablePlayerToEntity(this, 100.0D);
+	            if (target != null) {
+	                EntityTargetEvent event = new EntityTargetEvent(this.getBukkitEntity(), target.getBukkitEntity(), EntityTargetEvent.TargetReason.CLOSEST_PLAYER);
+	                this.worldObj.getServer().getPluginManager().callEvent(event);
+	
+	                if (!event.isCancelled()) {
+	                    if (event.getTarget() == null) {
+	                        this.targetedEntity = null;
+	                    } else {
+	                        this.targetedEntity = ((CraftEntity) event.getTarget()).getHandle();
+	                    }
+	                }
+	            }
+        	}
+            // CraftBukkit end
+            
             if (this.targetedEntity != null)
             {
                 this.aggroCooldown = 20;

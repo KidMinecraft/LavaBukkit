@@ -52,4 +52,6 @@ public interface ISaveHandler
      * Returns the name of the directory where world information is saved.
      */
     String getSaveDirectoryName();
+    
+    java.util.UUID getUUID(); // CraftBukkit
 }

@@ -1,5 +1,8 @@
 package net.minecraft.dispenser;
 
+import org.bukkit.craftbukkit.inventory.CraftItemStack;
+import org.bukkit.event.block.BlockDispenseEvent;
+
 import net.minecraft.block.BlockDispenser;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.item.ItemStack;
@@ -27,12 +30,20 @@ public class BehaviorDefaultDispenseItem implements IBehaviorDispenseItem
         EnumFacing var3 = EnumFacing.func_82600_a(par1IBlockSource.func_82620_h());
         IPosition var4 = BlockDispenser.func_82525_a(par1IBlockSource);
         ItemStack var5 = par2ItemStack.splitStack(1);
-        func_82486_a(par1IBlockSource.getWorld(), var5, 6, var3, var4);
+        
+        // CraftBukkit start
+        if(!func_82486_a(par1IBlockSource.getWorld(), var5, 6, var3, par1IBlockSource))
+        	par2ItemStack.stackSize++;
+        // CraftBukkit end
+        
         return par2ItemStack;
     }
 
-    public static void func_82486_a(World par0World, ItemStack par1ItemStack, int par2, EnumFacing par3EnumFacing, IPosition par4IPosition)
+    // CraftBukkit start - void -> boolean return, IPosition -> ISourceBlock last argument
+    public static boolean func_82486_a(World par0World, ItemStack par1ItemStack, int par2, EnumFacing par3EnumFacing, IBlockSource par4IBlockSource)
     {
+    	IPosition par4IPosition = BlockDispenser.func_82525_a(par4IBlockSource);
+    	// CraftBukkit end
         double var5 = par4IPosition.getX();
         double var7 = par4IPosition.getY();
         double var9 = par4IPosition.getZ();
@@ -44,7 +55,41 @@ public class BehaviorDefaultDispenseItem implements IBehaviorDispenseItem
         var11.motionX += par0World.rand.nextGaussian() * 0.007499999832361937D * (double)par2;
         var11.motionY += par0World.rand.nextGaussian() * 0.007499999832361937D * (double)par2;
         var11.motionZ += par0World.rand.nextGaussian() * 0.007499999832361937D * (double)par2;
+        
+        // CraftBukkit start
+        org.bukkit.block.Block block = par0World.getWorld().getBlockAt(par4IBlockSource.getXInt(), par4IBlockSource.getYInt(), par4IBlockSource.getZInt());
+        CraftItemStack craftItem = CraftItemStack.asCraftMirror(par1ItemStack);
+
+        BlockDispenseEvent event = new BlockDispenseEvent(block, craftItem.clone(), new org.bukkit.util.Vector(var11.motionX, var11.motionY, var11.motionZ));
+        if (!BlockDispenser.eventFired) {
+            par0World.getServer().getPluginManager().callEvent(event);
+        }
+
+        if (event.isCancelled()) {
+            return false;
+        }
+        
+        var11.func_92013_a(CraftItemStack.asNMSCopy(event.getItem()));
+        var11.motionX = event.getVelocity().getX();
+        var11.motionY = event.getVelocity().getY();
+        var11.motionZ = event.getVelocity().getZ();
+
+        if (!event.getItem().equals(craftItem)) {
+            // Chain to handler for new item
+            ItemStack eventStack = CraftItemStack.asNMSCopy(event.getItem());
+            IBehaviorDispenseItem idispensebehavior = (IBehaviorDispenseItem) BlockDispenser.dispenseBehaviorRegistry.func_82594_a(eventStack.getItem());
+            if (idispensebehavior != IBehaviorDispenseItem.itemDispenseBehaviorProvider && idispensebehavior.getClass() != BehaviorDefaultDispenseItem.class) {
+                idispensebehavior.dispense(par4IBlockSource, eventStack);
+            } else {
+                par0World.spawnEntityInWorld(var11);
+            }
+            return false;
+        }
+        
         par0World.spawnEntityInWorld(var11);
+        
+        return true;
+        // CraftBukkit end
     }
 
     /**

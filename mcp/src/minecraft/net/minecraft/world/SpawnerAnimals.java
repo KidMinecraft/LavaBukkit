@@ -6,6 +6,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+
+import org.bukkit.craftbukkit.util.LongHash;
+import org.bukkit.craftbukkit.util.LongObjectHashMap;
+import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.EntityLiving;
@@ -29,7 +34,7 @@ import net.minecraftforge.event.entity.living.LivingSpecialSpawnEvent;
 public final class SpawnerAnimals
 {
     /** The 17x17 area around the player where mobs can spawn */
-    private static HashMap eligibleChunksForSpawning = new HashMap();
+    private static LongObjectHashMap<Boolean> eligibleChunksForSpawning = new LongObjectHashMap<Boolean>(); // CraftBukkit - HashMap -> LongObjectHashMap
 
     /** An array of entity classes that spawn at night. */
     protected static final Class[] nightSpawnEntities = new Class[] {EntitySpider.class, EntityZombie.class, EntitySkeleton.class};
@@ -74,16 +79,16 @@ public final class SpawnerAnimals
                     for (int var10 = -var8; var10 <= var8; ++var10)
                     {
                         boolean var11 = var9 == -var8 || var9 == var8 || var10 == -var8 || var10 == var8;
-                        ChunkCoordIntPair var12 = new ChunkCoordIntPair(var9 + var6, var10 + var7);
 
-                        if (!var11)
-                        {
-                            eligibleChunksForSpawning.put(var12, Boolean.valueOf(false));
+                        // CraftBukkit start
+                        long chunkCoords = LongHash.toLong(var9 + var6, var10 + var7);
+
+                        if (!var11) {
+                            eligibleChunksForSpawning.put(chunkCoords, false);
+                        } else if (!eligibleChunksForSpawning.containsKey(chunkCoords)) {
+                            eligibleChunksForSpawning.put(chunkCoords, true);
                         }
-                        else if (!eligibleChunksForSpawning.containsKey(var12))
-                        {
-                            eligibleChunksForSpawning.put(var12, Boolean.valueOf(true));
-                        }
+                        // CraftBukkit end
                     }
                 }
             }
@@ -96,8 +101,30 @@ public final class SpawnerAnimals
             for (int var34 = 0; var34 < var7; ++var34)
             {
                 EnumCreatureType var35 = var33[var34];
+                
+                // CraftBukkit start - use per-world spawn limits
+                int limit = var35.getMaxNumberOfCreature();
+                switch (var35) {
+                    case monster:
+                        limit = par0WorldServer.getWorld().getMonsterSpawnLimit();
+                        break;
+                    case creature:
+                        limit = par0WorldServer.getWorld().getAnimalSpawnLimit();
+                        break;
+                    case waterCreature:
+                        limit = par0WorldServer.getWorld().getWaterAnimalSpawnLimit();
+                        break;
+                    case ambient:
+                        limit = par0WorldServer.getWorld().getAmbientSpawnLimit();
+                        break;
+                }
 
-                if ((!var35.getPeacefulCreature() || par2) && (var35.getPeacefulCreature() || par1) && (!var35.getAnimal() || par3) && par0WorldServer.countEntities(var35.getCreatureClass()) <= var35.getMaxNumberOfCreature() * eligibleChunksForSpawning.size() / 256)
+                if (limit == 0) {
+                    continue;
+                }
+                // CraftBukkit end
+
+                if ((!var35.getPeacefulCreature() || par2) && (var35.getPeacefulCreature() || par1) && (!var35.getAnimal() || par3) && par0WorldServer.countEntities(var35.getCreatureClass()) <= limit * eligibleChunksForSpawning.size() / 256) // CraftBukkit - use per-world limits
                 {
                     Iterator var37 = eligibleChunksForSpawning.keySet().iterator();
                     ArrayList<ChunkCoordIntPair> tmp = new ArrayList(eligibleChunksForSpawning.keySet());
@@ -107,11 +134,12 @@ public final class SpawnerAnimals
 
                     while (var37.hasNext())
                     {
-                        ChunkCoordIntPair var36 = (ChunkCoordIntPair)var37.next();
+                    	// CraftBukkit start
+                        long key = ((Long) var37.next()).longValue();
 
-                        if (!((Boolean)eligibleChunksForSpawning.get(var36)).booleanValue())
-                        {
-                            ChunkPosition var38 = getRandomSpawningPointInChunk(par0WorldServer, var36.chunkXPos, var36.chunkZPos);
+                        if (!eligibleChunksForSpawning.get(key)) {
+                            ChunkPosition var38 = getRandomSpawningPointInChunk(par0WorldServer, LongHash.msw(key), LongHash.lsw(key));
+                            // CraftBukkit end
                             int var13 = var38.x;
                             int var14 = var38.y;
                             int var15 = var38.z;
@@ -183,9 +211,11 @@ public final class SpawnerAnimals
                                                             if (canSpawn == Result.ALLOW || (canSpawn == Result.DEFAULT && var39.getCanSpawnHere()))
                                                             {
                                                                 ++var16;
-                                                                par0WorldServer.spawnEntityInWorld(var39);
+                                                                // CraftBukkit start - added a reason for spawning this creature, moved creatureSpecificInit up
                                                                 creatureSpecificInit(var39, par0WorldServer, var24, var25, var26);
-
+                                                                par0WorldServer.spawnEntityInWorld(var39, SpawnReason.NATURAL);
+                                                                // CraftBukkit end
+                                                                
                                                                 if (var16 >= var39.getMaxSpawnedInChunk())
                                                                 {
                                                                     continue label110;
@@ -242,7 +272,7 @@ public final class SpawnerAnimals
      */
     private static void creatureSpecificInit(EntityLiving par0EntityLiving, World par1World, float par2, float par3, float par4)
     {
-        if (ForgeEventFactory.doSpecialSpawn(par0EntityLiving, par1World, par2, par3, par4))
+    	if (ForgeEventFactory.doSpecialSpawn(par0EntityLiving, par1World, par2, par3, par4))
         {
             return;
         }
@@ -294,8 +324,10 @@ public final class SpawnerAnimals
                             }
 
                             var21.setLocationAndAngles((double)var18, (double)var19, (double)var20, par6Random.nextFloat() * 360.0F, 0.0F);
-                            par0World.spawnEntityInWorld(var21);
+                            // CraftBukkit start - added a reason for spawning this creature, moved creatureSpecificInit up
                             creatureSpecificInit(var21, par0World, var18, var19, var20);
+                            par0World.spawnEntityInWorld(var21, SpawnReason.CHUNK_GEN);
+                            // CraftBukkit end
                             var15 = true;
                         }
 

@@ -1,10 +1,19 @@
 package net.minecraft.world.gen.feature;
 
+import immibis.lavabukkit.nms.MCPBlockChangeDelegate;
+import immibis.lavabukkit.nms.NMSUtils;
+
 import java.util.Random;
+
+import org.bukkit.block.BlockState;
+import org.bukkit.material.MaterialData;
+
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockSapling.TreeGenerator;
+import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 
-public class WorldGenBigMushroom extends WorldGenerator
+public class WorldGenBigMushroom extends WorldGenerator implements TreeGenerator // CraftBukkit add interface
 {
     /** The mushroom type. 0 for brown, 1 for red. */
     private int mushroomType = -1;
@@ -20,8 +29,15 @@ public class WorldGenBigMushroom extends WorldGenerator
         super(false);
     }
 
-    public boolean generate(World par1World, Random par2Random, int par3, int par4, int par5)
+    // CraftBukkit start - change signature, delegate
+    public boolean generate(MCPBlockChangeDelegate par1World, Random par2Random, int par3, int par4, int par5)
     {
+    	return generate(par1World, par2Random, par3, par4, par5, null, null, null);
+    }
+    
+    public boolean generate(MCPBlockChangeDelegate par1World, Random par2Random, int par3, int par4, int par5, org.bukkit.event.world.StructureGrowEvent event, ItemStack itemstack, org.bukkit.craftbukkit.CraftWorld bukkitWorld)
+    {
+    	// CraftBukkit end
         int var6 = par2Random.nextInt(2);
 
         if (this.mushroomType >= 0)
@@ -58,7 +74,8 @@ public class WorldGenBigMushroom extends WorldGenerator
 
                             Block block = Block.blocksList[var13];
                             
-                            if (var13 != 0 && block != null && !block.isLeaves(par1World, var11, var9, var12))
+                            // LavaBukkit fix MCPBCD call
+                            if (var13 != 0 && block != null && !par1World.isLeaves(block, var11, var9, var12))
                             {
                                 var8 = false;
                             }
@@ -85,6 +102,16 @@ public class WorldGenBigMushroom extends WorldGenerator
                 }
                 else
                 {
+                	// CraftBukkit start
+                    if (event == null) {
+                        this.setBlockAndMetadata(par1World, par3, par4 - 1, par5, Block.dirt.blockID, 0);
+                    } else {
+                        BlockState dirtState = bukkitWorld.getBlockAt(par3, par4 - 1, par5).getState();
+                        dirtState.setTypeId(Block.dirt.blockID);
+                        event.getBlocks().add(dirtState);
+                    }
+                    // CraftBukkit end
+                    
                     int var16 = par4 + var7;
 
                     if (var6 == 1)
@@ -187,9 +214,21 @@ public class WorldGenBigMushroom extends WorldGenerator
 
                                 Block block = Block.blocksList[par1World.getBlockId(var13, var11, var14)];
 
-                                if ((var15 != 0 || par4 >= par4 + var7 - 1) && (block == null || block.canBeReplacedByLeaves(par1World, var13, var11, var14)))
+                                // LavaBukkit fix MCPBCD call
+                                if ((var15 != 0 || par4 >= par4 + var7 - 1) && (block == null || par1World.canBeReplacedByLeaves(block, var13, var11, var14)))
                                 {
-                                    this.setBlockAndMetadata(par1World, var13, var11, var14, Block.mushroomCapBrown.blockID + var6, var15);
+                                	// CraftBukkit start
+                                    if (event == null) {
+                                       this.setBlockAndMetadata(par1World, var13, var11, var14, Block.mushroomCapBrown.blockID + var6, var15);
+                                    } else {
+                                        BlockState state = bukkitWorld.getBlockAt(var13, var11, var14).getState();
+                                        state.setTypeId(Block.mushroomCapBrown.blockID + var6);
+                                        state.setData(new MaterialData(Block.mushroomCapBrown.blockID + var6, (byte) var15));
+                                        event.getBlocks().add(state);
+                                    }
+                                    // CraftBukkit end
+                                    
+                                    
                                 }
                             }
                         }
@@ -201,9 +240,21 @@ public class WorldGenBigMushroom extends WorldGenerator
 
                         Block block = Block.blocksList[var12];
 
-                        if (block == null || block.canBeReplacedByLeaves(par1World, par3, par4 + var11, par5))
+                        // LavaBukkit fix MCPBCD call
+                        if (block == null || par1World.canBeReplacedByLeaves(block, par3, par4 + var11, par5))
                         {
-                            this.setBlockAndMetadata(par1World, par3, par4 + var11, par5, Block.mushroomCapBrown.blockID + var6, 10);
+                        	// CraftBukkit start
+                            if (event == null) {
+                                this.setBlockAndMetadata(par1World, par3, par4 + var11, par5, Block.mushroomCapBrown.blockID + var6, 10);
+                            } else {
+                                BlockState state = bukkitWorld.getBlockAt(par3, par4 + var11, par5).getState();
+                                state.setTypeId(Block.mushroomCapBrown.blockID + var6);
+                                state.setData(new MaterialData(Block.mushroomCapBrown.blockID + var6, (byte) 10));
+                                event.getBlocks().add(state);
+                            }
+                            // CraftBukkit end
+                            
+                            
                         }
                     }
 
@@ -216,4 +267,7 @@ public class WorldGenBigMushroom extends WorldGenerator
             return false;
         }
     }
+    
+    // CraftBukkit
+	@Override public boolean generate(World var1, Random var2, int var3, int var4, int var5) {return generate(NMSUtils.createBCD(var1),var2,var3,var4,var5);}
 }

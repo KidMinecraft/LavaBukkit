@@ -3,6 +3,9 @@ package net.minecraft.entity.monster;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import java.util.List;
+
+import org.bukkit.event.entity.EntityTargetEvent;
+
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
@@ -14,7 +17,7 @@ import net.minecraft.world.World;
 public class EntityPigZombie extends EntityZombie
 {
     /** Above zero if this PigZombie is Angry. */
-    private int angerLevel = 0;
+    public int angerLevel = 0; // CraftBukkit - private -> public
 
     /** A random delay until this PigZombie next makes a sound. */
     private int randomSoundDelay = 0;
@@ -135,6 +138,25 @@ public class EntityPigZombie extends EntityZombie
      */
     private void becomeAngryAt(Entity par1Entity)
     {
+    	// CraftBukkit start
+    	if(!worldObj.isRemote) {
+	        org.bukkit.entity.Entity bukkitTarget = par1Entity == null ? null : par1Entity.getBukkitEntity();
+	
+	        EntityTargetEvent event = new EntityTargetEvent(this.getBukkitEntity(), bukkitTarget, EntityTargetEvent.TargetReason.PIG_ZOMBIE_TARGET);
+	        this.worldObj.getServer().getPluginManager().callEvent(event);
+	
+	        if (event.isCancelled()) {
+	            return;
+	        }
+	
+	        if (event.getTarget() == null) {
+	            this.entityToAttack = null;
+	            return;
+	        }
+	        par1Entity = ((org.bukkit.craftbukkit.entity.CraftEntity) event.getTarget()).getHandle();
+    	}
+        // CraftBukkit end
+        
         this.entityToAttack = par1Entity;
         this.angerLevel = 400 + this.rand.nextInt(400);
         this.randomSoundDelay = this.rand.nextInt(40);

@@ -1,5 +1,8 @@
 package net.minecraft.entity.ai;
 
+import org.bukkit.event.entity.EntityTargetEvent;
+
+import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.passive.EntityTameable;
 import net.minecraft.entity.player.EntityPlayer;
@@ -160,6 +163,37 @@ public abstract class EntityAITarget extends EntityAIBase
                         return false;
                     }
                 }
+                
+                // CraftBukkit start - check all the different target goals for the reason, default to RANDOM_TARGET
+                EntityTargetEvent.TargetReason reason = EntityTargetEvent.TargetReason.RANDOM_TARGET;
+
+                if (this instanceof EntityAIDefendVillage) {
+                    reason = EntityTargetEvent.TargetReason.DEFEND_VILLAGE;
+                } else if (this instanceof EntityAIHurtByTarget) {
+                    reason = EntityTargetEvent.TargetReason.TARGET_ATTACKED_ENTITY;
+                } else if (this instanceof EntityAINearestAttackableTarget) {
+                    if (par1EntityLiving instanceof EntityPlayer) {
+                        reason = EntityTargetEvent.TargetReason.CLOSEST_PLAYER;
+                    }
+                } else if (this instanceof EntityAIOwnerHurtByTarget) {
+                    reason = EntityTargetEvent.TargetReason.TARGET_ATTACKED_OWNER;
+                } else if (this instanceof EntityAIOwnerHurtTarget) {
+                    reason = EntityTargetEvent.TargetReason.OWNER_ATTACKED_TARGET;
+                }
+
+                org.bukkit.event.entity.EntityTargetLivingEntityEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityTargetLivingEvent(this.taskOwner, par1EntityLiving, reason);
+                if (event.isCancelled() || event.getTarget() == null) {
+                    if (this.taskOwner instanceof EntityCreature) {
+                        ((EntityCreature) this.taskOwner).entityToAttack = null;
+                    }
+                    return false;
+                } else if (par1EntityLiving.getBukkitEntity() != event.getTarget()) {
+                    this.taskOwner.setAttackTarget((EntityLiving) ((org.bukkit.craftbukkit.entity.CraftEntity) event.getTarget()).getHandle());
+                }
+                if (this.taskOwner instanceof EntityCreature) {
+                    ((EntityCreature) this.taskOwner).entityToAttack = ((org.bukkit.craftbukkit.entity.CraftEntity) event.getTarget()).getHandle();
+                }
+                // CraftBukkit end
 
                 return true;
             }

@@ -1,10 +1,11 @@
 package net.minecraft.entity.projectile;
 
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+
 import net.minecraft.entity.EntityLiving;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -13,6 +14,12 @@ import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.world.World;
+
+import org.bukkit.craftbukkit.entity.CraftLivingEntity;
+import org.bukkit.entity.LivingEntity;
+
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
 public class EntityPotion extends EntityThrowable
 {
@@ -107,6 +114,9 @@ public class EntityPotion extends EntityThrowable
                 if (var4 != null && !var4.isEmpty())
                 {
                     Iterator var5 = var4.iterator();
+                    
+                    // CraftBukkit
+                    HashMap<LivingEntity, Double> affected = new HashMap<LivingEntity, Double>();
 
                     while (var5.hasNext())
                     {
@@ -121,6 +131,24 @@ public class EntityPotion extends EntityThrowable
                             {
                                 var9 = 1.0D;
                             }
+                            
+                            // CraftBukkit start
+                            affected.put((LivingEntity) var6.getBukkitEntity(), var9);
+                        }
+                    }
+                    
+                    org.bukkit.event.entity.PotionSplashEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPotionSplashEvent(this, affected);
+                    
+                    if (!event.isCancelled()) {
+                        for (LivingEntity victim : event.getAffectedEntities()) {
+                            if (!(victim instanceof CraftLivingEntity)) {
+                                continue;
+                            }
+
+                            EntityLiving var6 = ((CraftLivingEntity) victim).getHandle();
+                            double var9 = event.getIntensity(victim);
+                            // CraftBukkit end
+
 
                             Iterator var11 = var2.iterator();
 
@@ -128,10 +156,18 @@ public class EntityPotion extends EntityThrowable
                             {
                                 PotionEffect var12 = (PotionEffect)var11.next();
                                 int var13 = var12.getPotionID();
+                                
+                                // CraftBukkit start - abide by PVP settings - for players only!
+                                if (!this.worldObj.pvpMode && this.getThrower() instanceof EntityPlayer && var6 instanceof EntityPlayer && var6 != this.getThrower()) {
+                                	if(Potion.potionTypes[var13].isBadEffect())
+                                		continue;
+                                }
+                                // CraftBukkit end
 
                                 if (Potion.potionTypes[var13].isInstant())
                                 {
-                                    Potion.potionTypes[var13].affectEntity(this.getThrower(), var6, var12.getAmplifier(), var9);
+                                	// CraftBukkit - added 'this'
+                                    Potion.potionTypes[var13].affectEntity(this.getThrower(), var6, var12.getAmplifier(), var9, this);
                                 }
                                 else
                                 {

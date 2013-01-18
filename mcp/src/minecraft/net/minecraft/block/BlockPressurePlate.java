@@ -3,6 +3,10 @@ package net.minecraft.block;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+
+import org.bukkit.event.block.BlockRedstoneEvent;
+import org.bukkit.event.entity.EntityInteractEvent;
+
 import net.minecraft.block.material.Material;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.Entity;
@@ -162,6 +166,39 @@ public class BlockPressurePlate extends Block
                 }
             }
         }
+        
+        // CraftBukkit start - Interact Pressure Plate
+        org.bukkit.World bworld = par1World.isRemote ? null : par1World.getWorld();
+        org.bukkit.plugin.PluginManager manager = par1World.isRemote ? null : par1World.getServer().getPluginManager();
+
+        if (var5 != var6 && !par1World.isRemote) {
+            if (var6) {
+                for (Object object : var8) {
+                    if (object != null) {
+                        org.bukkit.event.Cancellable cancellable;
+
+                        if (object instanceof EntityPlayer) {
+                            cancellable = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerInteractEvent((EntityPlayer) object, org.bukkit.event.block.Action.PHYSICAL, par2, par3, par4, -1, null);
+                        } else if (object instanceof Entity) {
+                            cancellable = new EntityInteractEvent(((Entity) object).getBukkitEntity(), bworld.getBlockAt(par2, par3, par4));
+                            manager.callEvent((EntityInteractEvent) cancellable);
+                        } else {
+                            continue;
+                        }
+
+                        if (cancellable.isCancelled()) {
+                            return;
+                        }
+                    }
+                }
+            }
+
+            BlockRedstoneEvent eventRedstone = new BlockRedstoneEvent(bworld.getBlockAt(par2, par3, par4), var5 ? 1 : 0, var6 ? 1 : 0);
+            manager.callEvent(eventRedstone);
+
+            var6 = eventRedstone.getNewCurrent() > 0;
+        }
+        // CraftBukkit end
 
         if (var6 && !var5)
         {

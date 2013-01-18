@@ -1,5 +1,7 @@
 package net.minecraft.dispenser;
 
+import org.bukkit.event.block.BlockDispenseEvent;
+
 import net.minecraft.block.BlockDispenser;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.IProjectile;
@@ -18,7 +20,15 @@ public abstract class BehaviorProjectileDispense extends BehaviorDefaultDispense
         IPosition var4 = BlockDispenser.func_82525_a(par1IBlockSource);
         EnumFacing var5 = EnumFacing.func_82600_a(par1IBlockSource.func_82620_h());
         IProjectile var6 = this.getProjectileEntity(var3, var4);
-        var6.setThrowableHeading((double)var5.func_82601_c(), 0.10000000149011612D, (double)var5.func_82599_e(), this.func_82500_b(), this.func_82498_a());
+        
+        // CraftBukkit start
+        BlockDispenseEvent event = immibis.lavabukkit.dispenser.EventHelper.raiseEvent(this, par1IBlockSource, par2ItemStack, var5.func_82601_c(), 0.1, var5.func_82599_e());
+        if(event == null)
+        	return par2ItemStack;
+
+        var6.setThrowableHeading(event.getVelocity().getX(), event.getVelocity().getY(), event.getVelocity().getZ(), this.func_82500_b(), this.func_82498_a());
+        // CraftBukkit end
+        
         var3.spawnEntityInWorld((Entity)var6);
         par2ItemStack.splitStack(1);
         return par2ItemStack;

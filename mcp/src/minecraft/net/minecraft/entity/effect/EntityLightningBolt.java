@@ -30,7 +30,17 @@ public class EntityLightningBolt extends EntityWeatherEffect
 
     public EntityLightningBolt(World par1World, double par2, double par4, double par6)
     {
+    	// CraftBukkit start
+    	this(par1World, par2, par4, par6, false);
+    }
+    
+    public boolean isEffect = false;
+    
+    public EntityLightningBolt(World par1World, double par2, double par4, double par6, boolean isEffect)
+    {
+    	// CraftBukkit end
         super(par1World);
+        this.isEffect = isEffect; // CraftBukkit
         this.setLocationAndAngles(par2, par4, par6, 0.0F, 0.0F);
         this.lightningState = 2;
         this.boltVertex = this.rand.nextLong();

@@ -3,6 +3,11 @@ package net.minecraft.block;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import java.util.Random;
+
+import org.bukkit.event.block.BlockBurnEvent;
+import org.bukkit.event.block.BlockIgniteEvent;
+import org.bukkit.event.block.BlockSpreadEvent;
+
 import net.minecraft.block.material.Material;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.world.IBlockAccess;
@@ -126,12 +131,12 @@ public class BlockFire extends Block
 
             if (!this.canPlaceBlockAt(par1World, par2, par3, par4))
             {
-                par1World.setBlockWithNotify(par2, par3, par4, 0);
+            	fireExtinguished(par1World, par2, par3, par4); // CraftBukkit - invalid place location
             }
 
             if (!var6 && par1World.isRaining() && (par1World.canLightningStrikeAt(par2, par3, par4) || par1World.canLightningStrikeAt(par2 - 1, par3, par4) || par1World.canLightningStrikeAt(par2 + 1, par3, par4) || par1World.canLightningStrikeAt(par2, par3, par4 - 1) || par1World.canLightningStrikeAt(par2, par3, par4 + 1)))
             {
-                par1World.setBlockWithNotify(par2, par3, par4, 0);
+            	fireExtinguished(par1World, par2, par3, par4); // CraftBukkit - extinguished by rain
             }
             else
             {
@@ -153,7 +158,7 @@ public class BlockFire extends Block
                 }
                 else if (!var6 && !this.canBlockCatchFire(par1World, par2, par3 - 1, par4, UP) && var7 == 15 && par5Random.nextInt(4) == 0)
                 {
-                    par1World.setBlockWithNotify(par2, par3, par4, 0);
+                	fireExtinguished(par1World, par2, par3, par4); // CraftBukkit - burn out
                 }
                 else
                 {
@@ -171,6 +176,14 @@ public class BlockFire extends Block
                     this.tryToCatchBlockOnFire(par1World, par2, par3 + 1, par4, 250 + var9, par5Random, var7, DOWN );
                     this.tryToCatchBlockOnFire(par1World, par2, par3, par4 - 1, 300 + var9, par5Random, var7, SOUTH);
                     this.tryToCatchBlockOnFire(par1World, par2, par3, par4 + 1, 300 + var9, par5Random, var7, NORTH);
+                    
+                    // CraftBukkit start - call to stop spread of fire
+                    org.bukkit.Server server = par1World.getServer();
+                    org.bukkit.World bworld = par1World.getWorld();
+
+                    BlockIgniteEvent.IgniteCause igniteCause = BlockIgniteEvent.IgniteCause.SPREAD;
+                    org.bukkit.block.Block fromBlock = bworld.getBlockAt(par2, par3, par4);
+                    // CraftBukkit end
 
                     for (int var10 = par2 - 1; var10 <= par2 + 1; ++var10)
                     {
@@ -206,6 +219,30 @@ public class BlockFire extends Block
                                             {
                                                 var16 = 15;
                                             }
+                                            
+                                            // CraftBukkit start - call to stop spread of fire
+                                            org.bukkit.block.Block block = bworld.getBlockAt(var10, var12, var11);
+
+                                            if (block.getTypeId() != this.blockID) {
+                                                BlockIgniteEvent event = new BlockIgniteEvent(block, igniteCause, null);
+                                                server.getPluginManager().callEvent(event);
+
+                                                if (event.isCancelled()) {
+                                                    continue;
+                                                }
+
+                                                org.bukkit.block.BlockState blockState = block.getState();
+                                                blockState.setTypeId(this.blockID);
+                                                blockState.setData(new org.bukkit.material.MaterialData(this.blockID, (byte) var16));
+
+                                                BlockSpreadEvent spreadEvent = new BlockSpreadEvent(blockState.getBlock(), fromBlock, blockState);
+                                                server.getPluginManager().callEvent(spreadEvent);
+
+                                                if (!spreadEvent.isCancelled()) {
+                                                    blockState.update(true);
+                                                }
+                                            }
+                                            // CraftBukkit end
 
                                             par1World.setBlockAndMetadataWithNotify(var10, var12, var11, this.blockID, var16);
                                         }
@@ -242,6 +279,17 @@ public class BlockFire extends Block
         if (par6Random.nextInt(par5) < var8)
         {
             boolean var9 = par1World.getBlockId(par2, par3, par4) == Block.tnt.blockID;
+            
+            // CraftBukkit start
+            org.bukkit.block.Block theBlock = par1World.getWorld().getBlockAt(par2, par3, par4);
+
+            BlockBurnEvent event = new BlockBurnEvent(theBlock);
+            par1World.getServer().getPluginManager().callEvent(event);
+
+            if (event.isCancelled()) {
+                return;
+            }
+            // CraftBukkit end
 
             if (par6Random.nextInt(par7 + 10) < 5 && !par1World.canLightningStrikeAt(par2, par3, par4))
             {
@@ -497,4 +545,12 @@ public class BlockFire extends Block
         }
         return (newChance > oldChance ? newChance : oldChance);
     }
+    
+    // CraftBukkit start
+    private void fireExtinguished(World world, int x, int y, int z) {
+        if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(world.getWorld().getBlockAt(x, y, z), 0).isCancelled() == false) {
+            world.setBlockWithNotify(x, y, z, 0);
+        }
+    }
+    // CraftBukkit end
 }

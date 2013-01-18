@@ -91,4 +91,10 @@ public class TileEntitySkull extends TileEntity
     {
         return this.extraType;
     }
+    
+    // CraftBukkit start
+    public int getRotation() {
+        return this.skullRotation;
+    }
+    // CraftBukkit end
 }

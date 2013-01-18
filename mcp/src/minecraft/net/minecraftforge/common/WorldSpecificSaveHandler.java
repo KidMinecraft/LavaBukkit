@@ -1,6 +1,7 @@
 package net.minecraftforge.common;
 
 import java.io.File;
+import java.util.UUID;
 
 import net.minecraft.world.chunk.storage.IChunkLoader;
 import net.minecraft.world.storage.IPlayerFileData;
@@ -41,4 +42,7 @@ public class WorldSpecificSaveHandler implements ISaveHandler
     {
         return new File(dataDir, name + ".dat");
     }
+    
+    // LavaBukkit
+    @Override public UUID getUUID() {return parent.getUUID();}
 }

@@ -1,9 +1,9 @@
 package net.minecraft.inventory;
 
-class SlotEnchantmentTable extends InventoryBasic
+public class SlotEnchantmentTable extends InventoryBasic // CraftBukkit - made public
 {
     /** The brewing stand this slot belongs to. */
-    final ContainerEnchantment container;
+    public final ContainerEnchantment container; // CraftBukkit - package -> public
 
     SlotEnchantmentTable(ContainerEnchantment par1ContainerEnchantment, String par2Str, int par3)
     {

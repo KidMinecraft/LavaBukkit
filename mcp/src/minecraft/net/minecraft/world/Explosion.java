@@ -7,6 +7,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.event.entity.EntityDamageByBlockEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
+
 import net.minecraft.block.Block;
 import net.minecraft.enchantment.EnchantmentProtection;
 import net.minecraft.entity.Entity;
@@ -35,6 +43,8 @@ public class Explosion
     /** A list of ChunkPositions of blocks affected by this explosion */
     public List affectedBlockPositions = new ArrayList();
     private Map field_77288_k = new HashMap();
+    
+    public boolean wasCanceled = false; // CraftBukkit
 
     public Explosion(World par1World, Entity par2Entity, double par3, double par5, double par7, float par9)
     {
@@ -51,6 +61,12 @@ public class Explosion
      */
     public void doExplosionA()
     {
+    	// CraftBukkit start
+        if (this.explosionSize < 0.1F) {
+            return;
+        }
+        // CraftBukkit end
+        
         float var1 = this.explosionSize;
         HashSet var2 = new HashSet();
         int var3;
@@ -94,7 +110,7 @@ public class Explosion
                                 var14 -= (var27 + 0.3F) * var21;
                             }
 
-                            if (var14 > 0.0F)
+                            if (var14 > 0.0F && var23 >= 0 && var23 < 256) // CraftBukkit - don't wrap explosions
                             {
                                 var2.add(new ChunkPosition(var22, var23, var24));
                             }
@@ -138,16 +154,59 @@ public class Explosion
                     var19 /= var34;
                     double var33 = (double)this.worldObj.getBlockDensity(var31, var32.boundingBox);
                     double var35 = (1.0D - var13) * var33;
-                    var32.attackEntityFrom(DamageSource.explosion, (int)((var35 * var35 + var35) / 2.0D * 8.0D * (double)this.explosionSize + 1.0D));
+                    
+                    // CraftBukkit start - explosion damage hook
+                    org.bukkit.entity.Entity damagee = (var32 == null) ? null : var32.getBukkitEntity();
+                    int damageDone = (int)((var35 * var35 + var35) / 2.0D * 8.0D * (double)this.explosionSize + 1.0D);
+                    
                     double var36 = EnchantmentProtection.func_92040_a(var32, var35);
-                    var32.motionX += var15 * var36;
-                    var32.motionY += var17 * var36;
-                    var32.motionZ += var19 * var36;
+                    
+                    if(damagee == null) {
+                    	// nothing was hurt
+                    } else if(this.exploder == null) { // Block explosion (without an entity source; bed etc.)
+                    
+                    	EntityDamageByBlockEvent event = new EntityDamageByBlockEvent(null, damagee, org.bukkit.event.entity.EntityDamageEvent.DamageCause.BLOCK_EXPLOSION, damageDone);
+                    	Bukkit.getPluginManager().callEvent(event);
+                    	
+                    	if(!event.isCancelled()) {
+                    		damagee.setLastDamageCause(event);
+                    		var32.attackEntityFrom(DamageSource.explosion, event.getDamage());
+		                    var32.motionX += var15 * var36;
+		                    var32.motionY += var17 * var36;
+		                    var32.motionZ += var19 * var36;
 
-                    if (var32 instanceof EntityPlayer)
-                    {
-                        this.field_77288_k.put((EntityPlayer)var32, this.worldObj.getWorldVec3Pool().getVecFromPool(var15 * var35, var17 * var35, var19 * var35));
+		                    if (var32 instanceof EntityPlayer)
+		                    {
+		                        this.field_77288_k.put((EntityPlayer)var32, this.worldObj.getWorldVec3Pool().getVecFromPool(var15 * var35, var17 * var35, var19 * var35));
+		                    }
+                    	}
+                    } else {
+                    	final org.bukkit.entity.Entity damager = this.exploder.getBukkitEntity();
+                    	final EntityDamageEvent.DamageCause damageCause;
+                    	
+                    	if (damager instanceof org.bukkit.entity.TNTPrimed) {
+                            damageCause = EntityDamageEvent.DamageCause.BLOCK_EXPLOSION;
+                        } else {
+                            damageCause = EntityDamageEvent.DamageCause.ENTITY_EXPLOSION;
+                        }
+                    	
+                    	EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(damager, damagee, damageCause, damageDone);
+                        Bukkit.getPluginManager().callEvent(event);
+
+						if(!event.isCancelled()) {
+							damagee.setLastDamageCause(event);
+                    		var32.attackEntityFrom(DamageSource.explosion, event.getDamage());
+		                    var32.motionX += var15 * var36;
+		                    var32.motionY += var17 * var36;
+		                    var32.motionZ += var19 * var36;
+
+		                    if (var32 instanceof EntityPlayer)
+		                    {
+		                        this.field_77288_k.put((EntityPlayer)var32, this.worldObj.getWorldVec3Pool().getVecFromPool(var15 * var35, var17 * var35, var19 * var35));
+		                    }
+                    	}
                     }
+                    // CraftBukkit end
                 }
             }
         }
@@ -180,6 +239,38 @@ public class Explosion
 
         if (this.isSmoking)
         {
+        	// CraftBukkit start
+        	if(!worldObj.isRemote) {
+	            org.bukkit.World bworld = this.worldObj.getWorld();
+	            org.bukkit.entity.Entity explode = this.exploder == null ? null : this.exploder.getBukkitEntity();
+	            Location location = new Location(bworld, this.explosionX, this.explosionY, this.explosionZ);
+	
+	            List<org.bukkit.block.Block> blockList = new ArrayList<org.bukkit.block.Block>();
+	            for (int i1 = this.affectedBlockPositions.size() - 1; i1 >= 0; i1--) {
+	                ChunkPosition cpos = (ChunkPosition) this.affectedBlockPositions.get(i1);
+	                org.bukkit.block.Block block = bworld.getBlockAt(cpos.x, cpos.y, cpos.z);
+	                if (block.getType() != org.bukkit.Material.AIR) {
+	                    blockList.add(block);
+	                }
+	            }
+	
+	            EntityExplodeEvent event = new EntityExplodeEvent(explode, location, blockList, 0.3F);
+	            this.worldObj.getServer().getPluginManager().callEvent(event);
+	
+	            this.affectedBlockPositions.clear();
+	
+	            for (org.bukkit.block.Block block : event.blockList()) {
+	                ChunkPosition coords = new ChunkPosition(block.getX(), block.getY(), block.getZ());
+	                affectedBlockPositions.add(coords);
+	            }
+	
+	            if (event.isCancelled()) {
+	                this.wasCanceled = true;
+	                return;
+	            }
+        	}
+            // CraftBukkit end
+            
             var2 = this.affectedBlockPositions.iterator();
 
             while (var2.hasNext())
@@ -211,7 +302,8 @@ public class Explosion
                     this.worldObj.spawnParticle("smoke", var8, var10, var12, var14, var16, var18);
                 }
 
-                if (var7 > 0)
+                // CraftBukkit - stop explosions from putting out fire
+                if (var7 > 0 && var7 != Block.fire.blockID)
                 {
                     Block var25 = Block.blocksList[var7];
 

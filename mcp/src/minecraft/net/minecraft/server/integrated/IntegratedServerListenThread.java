@@ -11,6 +11,7 @@ import net.minecraft.network.NetworkListenThread;
 import net.minecraft.network.packet.NetHandler;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerListenThread;
+import net.minecraft.server.management.ServerConfigurationManager;
 import net.minecraft.util.HttpUtil;
 
 @SideOnly(Side.CLIENT)
@@ -87,7 +88,11 @@ public class IntegratedServerListenThread extends NetworkListenThread
     {
         if (this.theMemoryConnection != null)
         {
-            EntityPlayerMP var1 = this.getIntergatedServerMinecraftServerInstance().getConfigurationManager().createPlayerForUser(this.field_71759_e);
+        	// LavaBukkit start
+        	ServerConfigurationManager scm = this.getIntergatedServerMinecraftServerInstance().getConfigurationManager();
+            EntityPlayerMP var1 = scm.allowUserToConnect(null, this.field_71759_e, "integrated.localhost");
+            var1 = scm.createPlayerForUser(var1);
+            // LavaBukkit end
 
             if (var1 != null)
             {

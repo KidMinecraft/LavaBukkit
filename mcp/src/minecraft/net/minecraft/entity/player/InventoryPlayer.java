@@ -104,6 +104,31 @@ public class InventoryPlayer implements IInventory
 
         return -1;
     }
+    
+    // CraftBukkit start - watch method above! :D
+    public int canHold(ItemStack itemstack) {
+        int remains = itemstack.stackSize;
+        for (int i = 0; i < this.mainInventory.length; ++i) {
+            if (this.mainInventory[i] == null) return itemstack.stackSize;
+
+            // Taken from firstPartial(ItemStack)
+            if (this.mainInventory[i] != null
+            		
+            		&& this.mainInventory[i].itemID == itemstack.itemID
+            		&& this.mainInventory[i].isStackable()
+            		&& this.mainInventory[i].stackSize < this.mainInventory[i].getMaxStackSize()
+            		&& this.mainInventory[i].stackSize < this.getInventoryStackLimit()
+            		&& (!this.mainInventory[i].getHasSubtypes()
+            				|| this.mainInventory[i].getItemDamage() == itemstack.getItemDamage())
+            		&& ItemStack.areItemStackTagsEqual(this.mainInventory[i], itemstack)
+            		) {
+                remains -= (this.mainInventory[i].getMaxStackSize() < this.getInventoryStackLimit() ? this.mainInventory[i].getMaxStackSize() : this.getInventoryStackLimit()) - this.mainInventory[i].stackSize;
+            }
+            if (remains <= 0) return itemstack.stackSize;
+        }
+        return itemstack.stackSize - remains;
+    }
+    // CraftBukkit end
 
     /**
      * Returns the first item stack that is empty.
@@ -741,6 +766,11 @@ public class InventoryPlayer implements IInventory
 
     public ItemStack getItemStack()
     {
+    	// CraftBukkit start
+        if (this.itemStack != null && this.itemStack.stackSize == 0) {
+            this.setItemStack(null);
+        }
+        // CraftBukkit end
         return this.itemStack;
     }
 

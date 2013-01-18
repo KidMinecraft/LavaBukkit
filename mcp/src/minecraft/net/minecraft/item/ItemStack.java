@@ -175,7 +175,7 @@ public final class ItemStack
 
         if (this.stackTagCompound != null)
         {
-            par1NBTTagCompound.setTag("tag", this.stackTagCompound);
+            par1NBTTagCompound.setTag("tag", this.stackTagCompound.copy()); // CraftBukkit - make defensive copy, data is going to another thread
         }
 
         return par1NBTTagCompound;
@@ -192,7 +192,8 @@ public final class ItemStack
 
         if (par1NBTTagCompound.hasKey("tag"))
         {
-            this.stackTagCompound = par1NBTTagCompound.getCompoundTag("tag");
+        	// CraftBukkit - clear name from compound and make defensive copy as this data may be coming from the save thread
+            this.stackTagCompound = (NBTTagCompound)par1NBTTagCompound.getCompoundTag("tag").copy().setName("");
         }
     }
 
@@ -313,6 +314,12 @@ public final class ItemStack
                 {
                     this.stackSize = 0;
                 }
+                
+                // CraftBukkit start - Check for item breaking
+                if (this.stackSize == 0 && par2EntityLiving instanceof EntityPlayer && !par2EntityLiving.worldObj.isRemote) {
+                    org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerItemBreakEvent((EntityPlayer) par2EntityLiving, this);
+                }
+                // CraftBukkit end
 
                 this.itemDamage = 0;
             }

@@ -11,7 +11,7 @@ import net.minecraft.world.World;
 public class EntityFireworkRocket extends Entity
 {
     private int field_92011_a;
-    private int field_92010_b;
+    public int field_92010_b; // CraftBukkit - private -> public
 
     public EntityFireworkRocket(World par1World)
     {

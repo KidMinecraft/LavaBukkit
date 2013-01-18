@@ -1,6 +1,6 @@
 package net.minecraft.inventory;
 
-class InventoryRepair extends InventoryBasic
+public class InventoryRepair extends InventoryBasic // CraftBukkit - package -> public
 {
     /** Container of this anvil's block. */
     final ContainerRepair theContainer;

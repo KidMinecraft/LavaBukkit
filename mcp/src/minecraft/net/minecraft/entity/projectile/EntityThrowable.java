@@ -3,6 +3,9 @@ package net.minecraft.entity.projectile;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import java.util.List;
+
+import org.bukkit.event.entity.ProjectileHitEvent;
+
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLiving;
@@ -28,8 +31,8 @@ public abstract class EntityThrowable extends Entity implements IProjectile
     /**
      * Is the entity that throws this 'thing' (snowball, ender pearl, eye of ender or potion)
      */
-    private EntityLiving thrower;
-    private String throwerName = null;
+    public EntityLiving thrower; // CraftBukkit - private -> public
+    public String throwerName = null; // CraftBukkit - private -> public
     private int ticksInGround;
     private int ticksInAir = 0;
 
@@ -233,6 +236,12 @@ public abstract class EntityThrowable extends Entity implements IProjectile
             else
             {
                 this.onImpact(var3);
+                // CraftBukkit start
+                if (this.isDead && !worldObj.isRemote) {
+                    ProjectileHitEvent hitEvent = new ProjectileHitEvent((org.bukkit.entity.Projectile) this.getBukkitEntity());
+                    org.bukkit.Bukkit.getPluginManager().callEvent(hitEvent);
+                }
+                // CraftBukkit end
             }
         }
 

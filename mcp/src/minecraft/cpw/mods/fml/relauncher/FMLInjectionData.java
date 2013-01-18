@@ -10,7 +10,7 @@ import java.util.logging.Level;
 
 public class FMLInjectionData
 {
-    static File minecraftHome;
+    public static File minecraftHome; // LavaBukkit - package -> public
     static String major;
     static String minor;
     static String rev;

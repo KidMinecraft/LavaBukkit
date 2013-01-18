@@ -1,5 +1,8 @@
 package net.minecraft.block;
 
+import org.bukkit.craftbukkit.util.BlockStateListPopulator;
+import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
+
 import net.minecraft.block.material.Material;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.EntityLiving;
@@ -62,20 +65,24 @@ public class BlockPumpkin extends BlockDirectional
     public void onBlockAdded(World par1World, int par2, int par3, int par4)
     {
         super.onBlockAdded(par1World, par2, par3, par4);
+        
+        if (par1World.editingBlocks) return; // CraftBukkit
 
         if (par1World.getBlockId(par2, par3 - 1, par4) == Block.blockSnow.blockID && par1World.getBlockId(par2, par3 - 2, par4) == Block.blockSnow.blockID)
         {
             if (!par1World.isRemote)
             {
-                par1World.setBlock(par2, par3, par4, 0);
-                par1World.setBlock(par2, par3 - 1, par4, 0);
-                par1World.setBlock(par2, par3 - 2, par4, 0);
+            	// CraftBukkit start - use BlockStateListPopulator
+                BlockStateListPopulator blockList = new BlockStateListPopulator(par1World.getWorld());
+                blockList.setBlock(par2, par3, par4, 0);
+                blockList.setBlock(par2, par3 - 1, par4, 0);
+                blockList.setBlock(par2, par3 - 2, par4, 0);
                 EntitySnowman var9 = new EntitySnowman(par1World);
                 var9.setLocationAndAngles((double)par2 + 0.5D, (double)par3 - 1.95D, (double)par4 + 0.5D, 0.0F, 0.0F);
-                par1World.spawnEntityInWorld(var9);
-                par1World.notifyBlockChange(par2, par3, par4, 0);
-                par1World.notifyBlockChange(par2, par3 - 1, par4, 0);
-                par1World.notifyBlockChange(par2, par3 - 2, par4, 0);
+                if(par1World.spawnEntityInWorld(var9, SpawnReason.BUILD_SNOWMAN)) {
+                	blockList.updateList();
+                }
+                // CraftBukkit end
             }
 
             for (int var10 = 0; var10 < 120; ++var10)
@@ -90,45 +97,35 @@ public class BlockPumpkin extends BlockDirectional
 
             if (var5 || var6)
             {
-                par1World.setBlock(par2, par3, par4, 0);
-                par1World.setBlock(par2, par3 - 1, par4, 0);
-                par1World.setBlock(par2, par3 - 2, par4, 0);
+            	// CraftBukkit start - use BlockStateListPopulator
+            	BlockStateListPopulator blockList = new BlockStateListPopulator(par1World.getWorld());
+            	
+            	blockList.setBlock(par2, par3, par4, 0);
+            	blockList.setBlock(par2, par3 - 1, par4, 0);
+            	blockList.setBlock(par2, par3 - 2, par4, 0);
 
                 if (var5)
                 {
-                    par1World.setBlock(par2 - 1, par3 - 1, par4, 0);
-                    par1World.setBlock(par2 + 1, par3 - 1, par4, 0);
+                	blockList.setBlock(par2 - 1, par3 - 1, par4, 0);
+                	blockList.setBlock(par2 + 1, par3 - 1, par4, 0);
                 }
                 else
                 {
-                    par1World.setBlock(par2, par3 - 1, par4 - 1, 0);
-                    par1World.setBlock(par2, par3 - 1, par4 + 1, 0);
+                	blockList.setBlock(par2, par3 - 1, par4 - 1, 0);
+                	blockList.setBlock(par2, par3 - 1, par4 + 1, 0);
                 }
 
                 EntityIronGolem var7 = new EntityIronGolem(par1World);
                 var7.setPlayerCreated(true);
                 var7.setLocationAndAngles((double)par2 + 0.5D, (double)par3 - 1.95D, (double)par4 + 0.5D, 0.0F, 0.0F);
-                par1World.spawnEntityInWorld(var7);
-
-                for (int var8 = 0; var8 < 120; ++var8)
-                {
-                    par1World.spawnParticle("snowballpoof", (double)par2 + par1World.rand.nextDouble(), (double)(par3 - 2) + par1World.rand.nextDouble() * 3.9D, (double)par4 + par1World.rand.nextDouble(), 0.0D, 0.0D, 0.0D);
+                if(par1World.spawnEntityInWorld(var7, SpawnReason.BUILD_IRONGOLEM)) {
+	                for (int var8 = 0; var8 < 120; ++var8)
+	                {
+	                    par1World.spawnParticle("snowballpoof", (double)par2 + par1World.rand.nextDouble(), (double)(par3 - 2) + par1World.rand.nextDouble() * 3.9D, (double)par4 + par1World.rand.nextDouble(), 0.0D, 0.0D, 0.0D);
+	                }
+	                blockList.updateList();
                 }
-
-                par1World.notifyBlockChange(par2, par3, par4, 0);
-                par1World.notifyBlockChange(par2, par3 - 1, par4, 0);
-                par1World.notifyBlockChange(par2, par3 - 2, par4, 0);
-
-                if (var5)
-                {
-                    par1World.notifyBlockChange(par2 - 1, par3 - 1, par4, 0);
-                    par1World.notifyBlockChange(par2 + 1, par3 - 1, par4, 0);
-                }
-                else
-                {
-                    par1World.notifyBlockChange(par2, par3 - 1, par4 - 1, 0);
-                    par1World.notifyBlockChange(par2, par3 - 1, par4 + 1, 0);
-                }
+                // CraftBukkit end
             }
         }
     }

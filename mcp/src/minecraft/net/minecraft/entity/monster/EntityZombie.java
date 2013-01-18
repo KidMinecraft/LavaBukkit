@@ -122,7 +122,7 @@ public class EntityZombie extends EntityMob
      */
     public void setChild(boolean par1)
     {
-        this.getDataWatcher().updateObject(12, Byte.valueOf((byte)1));
+        this.getDataWatcher().updateObject(12, Byte.valueOf((byte)(par1 ? 1 : 0))); // CraftBukkit - used par1
     }
 
     /**

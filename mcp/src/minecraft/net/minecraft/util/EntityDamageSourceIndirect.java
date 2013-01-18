@@ -30,4 +30,10 @@ public class EntityDamageSourceIndirect extends EntityDamageSource
     {
         return StatCollector.translateToLocalFormatted("death." + this.damageType, new Object[] {par1EntityPlayer.username, this.indirectEntity == null ? this.damageSourceEntity.getEntityName() : this.indirectEntity.getEntityName()});
     }
+    
+    // CraftBukkit start
+    public Entity getProximateDamageSource() {
+        return super.getEntity();
+    }
+    // CraftBukkit end
 }

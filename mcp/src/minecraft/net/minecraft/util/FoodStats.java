@@ -3,8 +3,10 @@ package net.minecraft.util;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemFood;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.network.packet.Packet8UpdateHealth;
 
 public class FoodStats
 {
@@ -15,7 +17,7 @@ public class FoodStats
     private float foodSaturationLevel = 5.0F;
 
     /** The player's food exhaustion. */
-    private float foodExhaustionLevel;
+    public float foodExhaustionLevel; // CraftBukkit - private -> public
 
     /** The player's food timer value. */
     private int foodTimer = 0;
@@ -56,7 +58,17 @@ public class FoodStats
             }
             else if (var2 > 0)
             {
-                this.foodLevel = Math.max(this.foodLevel - 1, 0);
+                // CraftBukkit start
+                if(par1EntityPlayer instanceof EntityPlayerMP) {
+	                org.bukkit.event.entity.FoodLevelChangeEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callFoodLevelChangeEvent(par1EntityPlayer, Math.max(this.foodLevel - 1, 0));
+	
+	                if (!event.isCancelled()) {
+	                    this.foodLevel = event.getFoodLevel();
+	                }
+
+                	((EntityPlayerMP) par1EntityPlayer).playerNetServerHandler.sendPacketToPlayer(new Packet8UpdateHealth(par1EntityPlayer.getHealth(), this.foodLevel, this.foodSaturationLevel));
+                }
+                // CraftBukkit end
             }
         }
 

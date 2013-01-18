@@ -29,6 +29,9 @@ public class ItemEmptyMap extends ItemMapBase
         var6.dimension = (byte)par2World.provider.dimensionId;
         var6.markDirty();
         --par1ItemStack.stackSize;
+        
+        if(!par2World.isRemote)
+        	org.bukkit.craftbukkit.event.CraftEventFactory.callEvent(new org.bukkit.event.server.MapInitializeEvent(var6.mapView)); // CraftBukkit
 
         if (par1ItemStack.stackSize <= 0)
         {

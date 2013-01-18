@@ -78,6 +78,20 @@ public class ItemBow extends Item
             {
                 var8.setFire(100);
             }
+            
+            // CraftBukkit start
+            if(!par2World.isRemote) {
+	            org.bukkit.event.entity.EntityShootBowEvent event2 = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityShootBowEvent(par3EntityPlayer, par1ItemStack, var8, var7);
+	            if (event2.isCancelled()) {
+	                event2.getProjectile().remove();
+	                return;
+	            }
+	
+	            if (event2.getProjectile() == var8.getBukkitEntity()) {
+	                par2World.spawnEntityInWorld(var8);
+	            }
+            }
+            // CraftBukkit end
 
             par1ItemStack.damageItem(1, par3EntityPlayer);
             par2World.playSoundAtEntity(par3EntityPlayer, "random.bow", 1.0F, 1.0F / (itemRand.nextFloat() * 0.4F + 1.2F) + var7 * 0.5F);
@@ -91,10 +105,12 @@ public class ItemBow extends Item
                 par3EntityPlayer.inventory.consumeInventoryItem(Item.arrow.itemID);
             }
 
-            if (!par2World.isRemote)
-            {
-                par2World.spawnEntityInWorld(var8);
-            }
+            // CraftBukkit begin - moved up
+            //if (!par2World.isRemote)
+            //{
+            //    par2World.spawnEntityInWorld(var8);
+            //}
+            // CraftBukkit end
         }
     }
 

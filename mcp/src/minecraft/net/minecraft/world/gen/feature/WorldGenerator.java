@@ -1,5 +1,7 @@
 package net.minecraft.world.gen.feature;
 
+import immibis.lavabukkit.nms.MCPBlockChangeDelegate;
+
 import java.util.Random;
 import net.minecraft.world.World;
 
@@ -51,4 +53,23 @@ public abstract class WorldGenerator
             par1World.setBlockAndMetadata(par2, par3, par4, par5, par6);
         }
     }
+    
+    // LavaBukkit start
+    protected void setBlock(MCPBlockChangeDelegate par1World, int par2, int par3, int par4, int par5)
+    {
+        this.setBlockAndMetadata(par1World, par2, par3, par4, par5, 0);
+    }
+
+    protected void setBlockAndMetadata(MCPBlockChangeDelegate par1World, int par2, int par3, int par4, int par5, int par6)
+    {
+        if (this.doBlockNotify)
+        {
+            par1World.setBlockAndMetadataWithNotify(par2, par3, par4, par5, par6);
+        }
+        else
+        {
+            par1World.setBlockAndMetadata(par2, par3, par4, par5, par6);
+        }
+    }
+    // LavaBukkit end
 }

@@ -1,7 +1,5 @@
 package net.minecraft.entity.item;
 
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
@@ -10,6 +8,12 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
+
+import org.bukkit.craftbukkit.event.CraftEventFactory;
+import org.bukkit.event.entity.EntityTargetEvent;
+
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
 public class EntityXPOrb extends Entity
 {
@@ -26,7 +30,7 @@ public class EntityXPOrb extends Entity
     private int xpOrbHealth = 5;
 
     /** This is how much XP this orb has. */
-    private int xpValue;
+    public int xpValue; // CraftBukkit - private -> public
 
     /** The closest EntityPlayer to this orb. */
     private EntityPlayer closestPlayer;
@@ -131,21 +135,30 @@ public class EntityXPOrb extends Entity
             this.xpTargetColor = this.xpColor;
         }
 
+        if(!worldObj.isRemote) // LavaBukkit bugfix
         if (this.closestPlayer != null)
         {
-            double var3 = (this.closestPlayer.posX - this.posX) / var1;
-            double var5 = (this.closestPlayer.posY + (double)this.closestPlayer.getEyeHeight() - this.posY) / var1;
-            double var7 = (this.closestPlayer.posZ - this.posZ) / var1;
-            double var9 = Math.sqrt(var3 * var3 + var5 * var5 + var7 * var7);
-            double var11 = 1.0D - var9;
+        	// CraftBukkit start
+            EntityTargetEvent event = CraftEventFactory.callEntityTargetEvent(this, closestPlayer, EntityTargetEvent.TargetReason.CLOSEST_PLAYER);
+            Entity target = event.getTarget() == null ? null : ((org.bukkit.craftbukkit.entity.CraftEntity) event.getTarget()).getHandle();
 
-            if (var11 > 0.0D)
-            {
-                var11 *= var11;
-                this.motionX += var3 / var9 * var11 * 0.1D;
-                this.motionY += var5 / var9 * var11 * 0.1D;
-                this.motionZ += var7 / var9 * var11 * 0.1D;
+            if (!event.isCancelled() && target != null) {
+                double var3 = (target.posX - this.posX) / var1;
+	            double var5 = (target.posY + (double)target.getEyeHeight() - this.posY) / var1;
+	            double var7 = (target.posZ - this.posZ) / var1;
+	            double var9 = Math.sqrt(var3 * var3 + var5 * var5 + var7 * var7);
+	            double var11 = 1.0D - var9;
+                if (var11 > 0.0D)
+	            {
+	                var11 *= var11;
+	                this.motionX += var3 / var9 * var11 * 0.1D;
+	                this.motionY += var5 / var9 * var11 * 0.1D;
+	                this.motionZ += var7 / var9 * var11 * 0.1D;
+	            }
+                // CraftBukkit end
             }
+
+            
         }
 
         this.moveEntity(this.motionX, this.motionY, this.motionZ);
@@ -252,7 +265,7 @@ public class EntityXPOrb extends Entity
                 par1EntityPlayer.xpCooldown = 2;
                 this.playSound("random.orb", 0.1F, 0.5F * ((this.rand.nextFloat() - this.rand.nextFloat()) * 0.7F + 1.8F));
                 par1EntityPlayer.onItemPickup(this, 1);
-                par1EntityPlayer.addExperience(this.xpValue);
+                par1EntityPlayer.addExperience(CraftEventFactory.callPlayerExpChangeEvent(par1EntityPlayer, this.xpValue).getAmount()); // CraftBukkit - this.value to event.getAmount()
                 this.setDead();
             }
         }
@@ -263,7 +276,7 @@ public class EntityXPOrb extends Entity
      */
     public int getXpValue()
     {
-        return this.xpValue;
+    	return this.xpValue;
     }
 
     @SideOnly(Side.CLIENT)

@@ -1,5 +1,7 @@
 package net.minecraft.entity.monster;
 
+import org.bukkit.craftbukkit.event.CraftEventFactory;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockSilverfish;
 import net.minecraft.entity.Entity;
@@ -163,6 +165,12 @@ public class EntitySilverfish extends EntityMob
 
                                 if (var8 == Block.silverfish.blockID)
                                 {
+                                	// CraftBukkit start
+                                    if (CraftEventFactory.callEntityChangeBlockEvent(this, var1 + var6, var2 + var5, var3 + var7, 0, 0).isCancelled()) {
+                                        continue;
+                                    }
+                                    // CraftBukkit end
+                                    
                                     this.worldObj.playAuxSFX(2001, var1 + var6, var2 + var5, var3 + var7, Block.silverfish.blockID + (this.worldObj.getBlockMetadata(var1 + var6, var2 + var5, var3 + var7) << 12));
                                     this.worldObj.setBlockWithNotify(var1 + var6, var2 + var5, var3 + var7, 0);
                                     Block.silverfish.onBlockDestroyedByPlayer(this.worldObj, var1 + var6, var2 + var5, var3 + var7, 0);
@@ -189,6 +197,12 @@ public class EntitySilverfish extends EntityMob
 
                 if (BlockSilverfish.getPosingIdByMetadata(var5))
                 {
+                	// CraftBukkit start
+                    if (CraftEventFactory.callEntityChangeBlockEvent(this, var1 + Facing.offsetsXForSide[var9], var2 + Facing.offsetsYForSide[var9], var3 + Facing.offsetsZForSide[var9], Block.silverfish.blockID, BlockSilverfish.getMetadataForBlockType(var5)).isCancelled()) {
+                        return;
+                    }
+                    // CraftBukkit end
+                    
                     this.worldObj.setBlockAndMetadataWithNotify(var1 + Facing.offsetsXForSide[var9], var2 + Facing.offsetsYForSide[var9], var3 + Facing.offsetsZForSide[var9], Block.silverfish.blockID, BlockSilverfish.getMetadataForBlockType(var5));
                     this.spawnExplosionParticle();
                     this.setDead();
@@ -250,7 +264,7 @@ public class EntitySilverfish extends EntityMob
      * Get this Entity's EnumCreatureAttribute
      */
     public EnumCreatureAttribute getCreatureAttribute()
-    {
+    { 
         return EnumCreatureAttribute.ARTHROPOD;
     }
 }

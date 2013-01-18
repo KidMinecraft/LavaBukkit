@@ -1,9 +1,11 @@
 package net.minecraft.world;
 
+import immibis.lavabukkit.world.BukkitWorldRegistry;
 import net.minecraft.profiler.Profiler;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.storage.DerivedWorldInfo;
 import net.minecraft.world.storage.ISaveHandler;
+import net.minecraft.world.storage.MapStorage;
 
 public class WorldServerMulti extends WorldServer
 {
@@ -12,6 +14,8 @@ public class WorldServerMulti extends WorldServer
         super(par1MinecraftServer, par2ISaveHandler, par3Str, par4, par5WorldSettings, par7Profiler);
         this.mapStorage = par6WorldServer.mapStorage;
         this.worldInfo = new DerivedWorldInfo(par6WorldServer.getWorldInfo());
+        
+        BukkitWorldRegistry.initWorldServer(this); // LavaBukkit
     }
 
     /**

@@ -1,17 +1,21 @@
 package net.minecraft.world.gen.feature;
 
+import immibis.lavabukkit.nms.MCPBlockChangeDelegate;
+import immibis.lavabukkit.nms.NMSUtils;
+
 import java.util.Random;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockSapling.TreeGenerator;
 import net.minecraft.world.World;
 
-public class WorldGenForest extends WorldGenerator
+public class WorldGenForest extends WorldGenerator implements TreeGenerator // CraftBukkit add interface
 {
     public WorldGenForest(boolean par1)
     {
         super(par1);
     }
 
-    public boolean generate(World par1World, Random par2Random, int par3, int par4, int par5)
+    public boolean generate(MCPBlockChangeDelegate par1World, Random par2Random, int par3, int par4, int par5)
     {
         int var6 = par2Random.nextInt(3) + 5;
         boolean var7 = true;
@@ -47,7 +51,8 @@ public class WorldGenForest extends WorldGenerator
 
                             Block block = Block.blocksList[var12];
 
-                            if (var12 != 0 && (block != null && !block.isLeaves(par1World, var10,  var8, var11)))
+                            // LavaBukkit fix MCPBCD call
+                            if (var12 != 0 && (block != null && !par1World.isLeaves(block, var10,  var8, var11)))
                             {
                                 var7 = false;
                             }
@@ -88,8 +93,9 @@ public class WorldGenForest extends WorldGenerator
 
                                 Block block = Block.blocksList[par1World.getBlockId(var12, var16, var14)];
                                 
-                                if ((Math.abs(var13) != var11 || Math.abs(var15) != var11 || par2Random.nextInt(2) != 0 && var10 != 0) && 
-                                    (block == null || block.canBeReplacedByLeaves(par1World, var12, var16, var14)))
+                                if ((Math.abs(var13) != var11 || Math.abs(var15) != var11 || par2Random.nextInt(2) != 0 && var10 != 0) &&
+                                	// LavaBukkit fix MCPBCD call
+                                    (block == null || par1World.canBeReplacedByLeaves(block, var12, var16, var14)))
                                 {
                                     this.setBlockAndMetadata(par1World, var12, var16, var14, Block.leaves.blockID, 2);
                                 }
@@ -103,7 +109,8 @@ public class WorldGenForest extends WorldGenerator
 
                         Block block = Block.blocksList[var10];
 
-                        if (var10 == 0 || block == null || block.isLeaves(par1World, par3, par4 + var16, par5))
+                        // LavaBukkit fix MCPBCD call
+                        if (var10 == 0 || block == null || par1World.isLeaves(block, par3, par4 + var16, par5))
                         {
                             this.setBlockAndMetadata(par1World, par3, par4 + var16, par5, Block.wood.blockID, 2);
                         }
@@ -122,4 +129,7 @@ public class WorldGenForest extends WorldGenerator
             return false;
         }
     }
+
+	// CraftBukkit
+	@Override public boolean generate(World var1, Random var2, int var3, int var4, int var5) {return generate(NMSUtils.createBCD(var1),var2,var3,var4,var5);}
 }

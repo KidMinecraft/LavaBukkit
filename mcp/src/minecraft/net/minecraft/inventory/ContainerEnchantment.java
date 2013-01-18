@@ -3,8 +3,15 @@ package net.minecraft.inventory;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+
+import org.bukkit.craftbukkit.inventory.CraftItemStack;
+import org.bukkit.entity.Player;
+import org.bukkit.event.enchantment.EnchantItemEvent;
+
 import net.minecraft.block.Block;
+import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentData;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.player.EntityPlayer;
@@ -186,32 +193,50 @@ public class ContainerEnchantment extends Container
 
                 if (var4 != null)
                 {
-                    par1EntityPlayer.addExperienceLevel(-this.enchantLevels[par2]);
+                	// CraftBukkit start
+                    Map<org.bukkit.enchantments.Enchantment, Integer> enchants = new java.util.HashMap<org.bukkit.enchantments.Enchantment, Integer>();
+                    for (Object obj : var4) {
+                        EnchantmentData instance = (EnchantmentData) obj;
+                        enchants.put(org.bukkit.enchantments.Enchantment.getById(instance.enchantmentobj.effectId), instance.enchantmentLevel);
+                    }
+                    CraftItemStack item = CraftItemStack.asCraftMirror(var3);
 
-                    if (var5)
-                    {
-                        var3.itemID = Item.field_92053_bW.itemID;
+                    EnchantItemEvent event = new EnchantItemEvent((Player) par1EntityPlayer.getBukkitEntity(), this.getBukkitView(), this.worldPointer.getWorld().getBlockAt(this.posX, this.posY, this.posZ), item, this.enchantLevels[par2], enchants, par2);
+                    this.worldPointer.getServer().getPluginManager().callEvent(event);
+
+                    int level = event.getExpLevelCost();
+                    if (event.isCancelled() || (level > par1EntityPlayer.experienceLevel && !par1EntityPlayer.capabilities.isCreativeMode) || enchants.isEmpty()) {
+                        return false;
                     }
 
-                    int var6 = var5 ? this.rand.nextInt(var4.size()) : -1;
+                    boolean applied = !var5;
+                    for (Map.Entry<org.bukkit.enchantments.Enchantment, Integer> entry : event.getEnchantsToAdd().entrySet()) {
+                        try {
+                            if (var5) {
+                                int enchantId = entry.getKey().getId();
+                                if (Enchantment.enchantmentsList[enchantId] == null) {
+                                    continue;
+                                }
 
-                    for (int var7 = 0; var7 < var4.size(); ++var7)
-                    {
-                        EnchantmentData var8 = (EnchantmentData)var4.get(var7);
-
-                        if (!var5 || var7 == var6)
-                        {
-                            if (var5)
-                            {
-                                Item.field_92053_bW.func_92060_a(var3, var8);
+                                EnchantmentData enchantment = new EnchantmentData(enchantId, entry.getValue());
+                                Item.field_92053_bW.func_92060_a(var3, enchantment);
+                                applied = true;
+                                var3.itemID = Item.field_92053_bW.itemID;
+                                break;
+                            } else {
+                                item.addEnchantment(entry.getKey(), entry.getValue());
                             }
-                            else
-                            {
-                                var3.addEnchantment(var8.enchantmentobj, var8.enchantmentLevel);
-                            }
+                        } catch (IllegalArgumentException e) {
+                            /* Just swallow invalid enchantments */
                         }
                     }
 
+                    // Only down level if we've applied the enchantments
+                    if (applied) {
+                        par1EntityPlayer.addExperienceLevel(-level);
+                    }
+                    // CraftBukkit end
+                    
                     this.onCraftMatrixChanged(this.tableInventory);
                 }
             }

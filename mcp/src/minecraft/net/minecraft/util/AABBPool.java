@@ -43,6 +43,9 @@ public class AABBPool
      */
     public AxisAlignedBB addOrModifyAABBInPool(double par1, double par3, double par5, double par7, double par9, double par11)
     {
+        // CraftBukkit - don't pool objects indefinitely if thread doesn't adhere to contract
+        if (this.numCleans == 0) return new AxisAlignedBB(par1, par3, par5, par7, par9, par11);
+        
         AxisAlignedBB var13;
 
         if (this.nextPoolIndex >= this.listAABB.size())
@@ -70,19 +73,22 @@ public class AABBPool
         {
             this.maxPoolIndex = this.nextPoolIndex;
         }
-
-        if (this.numCleans++ == this.maxNumCleans)
-        {
-            int var1 = Math.max(this.maxPoolIndex, this.listAABB.size() - this.numEntriesToRemove);
-
-            while (this.listAABB.size() > var1)
-            {
-                this.listAABB.remove(var1);
+        
+        // CraftBukkit start - intelligent cache
+        if ((this.numCleans++ & 0xff) == 0) {
+            int newSize = this.listAABB.size() - (this.listAABB.size() >> 3);
+            // newSize will be 87.5%, but if we were not in that range, we clear some of the cache
+            if (newSize > this.maxPoolIndex) {
+                // Work down from size() to prevent insane array copies
+                for (int i = this.listAABB.size() - 1; i > newSize; i--) {
+                    this.listAABB.remove(i);
+                }
             }
 
             this.maxPoolIndex = 0;
-            this.numCleans = 0;
+            // this.numCleans = 0; // We do not reset to zero; it doubles for a flag
         }
+        // CraftBukkit end
 
         this.nextPoolIndex = 0;
     }
