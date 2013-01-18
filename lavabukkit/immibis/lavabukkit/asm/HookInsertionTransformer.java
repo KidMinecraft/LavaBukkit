@@ -138,7 +138,7 @@ public class HookInsertionTransformer extends ASMTransformerBase {
 		if(!hookedClasses.contains(name.replace('.', '/')))
 			return parent;
 		
-		//VERIFY_BYTECODE = name.equals("net.minecraft.block.BlockGrass");
+		//VERIFY_BYTECODE = name.equals("net.minecraft.block.BlockLeaves");
 		
 		return new ClassVisitor(Opcodes.ASM4, parent) {
 			private String classInternalName;
@@ -237,7 +237,7 @@ public class HookInsertionTransformer extends ASMTransformerBase {
 						if(!callBefore.isEmpty()) {
 							super.visitJumpInsn(Opcodes.GOTO, normalExecLabel);
 							super.visitLabel(earlyReturnLabel);
-							super.visitFrame(Opcodes.F_SAME1, 0, null, 1, new Object[] {"java/lang/String"});
+							super.visitFrame(Opcodes.F_SAME1, 0, null, 1, new Object[] {"java/lang/Object"});
 							
 							ASMUtils.unboxAndReturn(this, Type.getReturnType(caller.desc));
 							

@@ -41,6 +41,26 @@
 			<locationURI>ROOT_LOC/mcp</locationURI>
 		</link>
 	</linkedResources>
+	<filteredResources>
+		<filter>
+			<id>1358506076384</id>
+			<name>craftbukkit-src</name>
+			<type>10</type>
+			<matcher>
+				<id>org.eclipse.ui.ide.multiFilter</id>
+				<arguments>1.0-name-matches-false-false-net</arguments>
+			</matcher>
+		</filter>
+		<filter>
+			<id>1358506076391</id>
+			<name>craftbukkit-src</name>
+			<type>10</type>
+			<matcher>
+				<id>org.eclipse.ui.ide.multiFilter</id>
+				<arguments>1.0-name-matches-false-false-jline</arguments>
+			</matcher>
+		</filter>
+	</filteredResources>
 	<variableList>
 		<variable>
 			<name>ROOT_LOC</name>

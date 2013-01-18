@@ -116,6 +116,8 @@ import com.avaje.ebeaninternal.server.lib.sql.TransactionIsolation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.MapMaker;
 
+import cpw.mods.fml.relauncher.ReflectionHelper;
+
 public final class CraftServer implements Server {
     private final String serverName = immibis.lavabukkit.LavaBukkitMod.NAME; // LavaBukkit
     private final String serverVersion = LavaBukkitMod.VERSION; // LavaBukkit
@@ -161,7 +163,9 @@ public final class CraftServer implements Server {
         this.primaryThread = Thread.currentThread(); // LavaBukkit
         this.playerList = playerList;
         online.value = console.isServerInOnlineMode(); // LavaBukkit
-
+        
+        ReflectionHelper.setPrivateValue(Bukkit.class, null, null, "server"); // LavaBukkit
+        
         Bukkit.setServer(this);
 
         if(Potion.getBrewer() == null)
