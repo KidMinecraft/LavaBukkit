@@ -147,7 +147,8 @@ public class ChunkProviderServer implements IChunkProvider
             if (var5 == null)
             {
             	// CraftBukkit start
-            	if(runnable != null && currentChunkLoader instanceof AnvilChunkLoader && ((AnvilChunkLoader)currentChunkLoader).chunkExists(worldObj, par1, par2)) {
+            	// LavaBukkit - TODO disabled async chunkloading for now
+            	if(false && runnable != null && currentChunkLoader instanceof AnvilChunkLoader && ((AnvilChunkLoader)currentChunkLoader).chunkExists(worldObj, par1, par2)) {
             		ChunkIOExecutor.queueChunkLoad(worldObj, (AnvilChunkLoader)currentChunkLoader, this, par1, par2, runnable);
             		return null;
             	}
