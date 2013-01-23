@@ -23,5 +23,5 @@
 	<classpathentry kind="lib" path="mcp/jars/bin/lwjgl_util.jar"/>
 	<classpathentry kind="lib" path="mcp/jars/bin/lwjgl.jar"/>
 	<classpathentry kind="lib" path="mcp/jars/bin/minecraft.jar"/>
-	<classpathentry kind="output" path="mcp/bin"/>
+	<classpathentry kind="output" path="mcp/bin/minecraft"/>
 </classpath>
