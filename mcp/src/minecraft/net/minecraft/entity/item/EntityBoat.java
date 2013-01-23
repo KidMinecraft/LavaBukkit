@@ -70,7 +70,8 @@ public class EntityBoat extends Entity
         this.setSize(1.5F, 0.6F);
         this.yOffset = this.height / 2.0F;
         
-        this.worldObj.getServer().getPluginManager().callEvent(new VehicleCreateEvent((Vehicle) this.getBukkitEntity())); // CraftBukkit
+        if(!worldObj.isRemote)
+        	this.worldObj.getServer().getPluginManager().callEvent(new VehicleCreateEvent((Vehicle) this.getBukkitEntity())); // CraftBukkit
     }
 
     /**
