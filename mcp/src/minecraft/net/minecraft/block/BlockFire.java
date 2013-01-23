@@ -153,7 +153,10 @@ public class BlockFire extends Block
                 {
                     if (!par1World.doesBlockHaveSolidTopSurface(par2, par3 - 1, par4) || var7 > 3)
                     {
-                        par1World.setBlockWithNotify(par2, par3, par4, 0);
+                    	// LavaBukkit start - use fireExtinguished (CB is missing this event)
+                        //par1World.setBlockWithNotify(par2, par3, par4, 0);
+                    	fireExtinguished(par1World, par2, par3, par4);
+                    	// LavaBukkit end
                     }
                 }
                 else if (!var6 && !this.canBlockCatchFire(par1World, par2, par3 - 1, par4, UP) && var7 == 15 && par5Random.nextInt(4) == 0)

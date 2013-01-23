@@ -36,6 +36,11 @@
 			<locationURI>ROOT_LOC/lavabukkit</locationURI>
 		</link>
 		<link>
+			<name>lavabukkit-tests</name>
+			<type>2</type>
+			<locationURI>ROOT_LOC/lavabukkit-tests</locationURI>
+		</link>
+		<link>
 			<name>mcp</name>
 			<type>2</type>
 			<locationURI>ROOT_LOC/mcp</locationURI>

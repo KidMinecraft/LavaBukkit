@@ -135,16 +135,16 @@ public class ModPluginManager {
 	private static Object getPluginRef(String name, ArtifactVersion versionBounds) {
 		Plugin plugin = Bukkit.getPluginManager().getPlugin(name);
 		if(plugin == null) {
-			logger.info("Referenced plugin not found: "+name+" "+versionBounds.getVersionString());
+			logger.fine("Referenced plugin not found: "+name+" "+versionBounds.getVersionString());
 			return null;
 		}
 		String pluginName = plugin.getName();
 		String pluginVersion = plugin.getDescription().getVersion();
 		if(!VersionParser.satisfies(versionBounds, new DefaultArtifactVersion(pluginName, pluginVersion))) {
-			logger.info("Referenced plugin has unacceptable version: need "+pluginName+" "+versionBounds.getRangeString()+", got "+pluginVersion);
+			logger.fine("Referenced plugin has unacceptable version: need "+pluginName+" "+versionBounds.getRangeString()+", got "+pluginVersion);
 			return null;
 		}
-		logger.info("Referenced plugin: "+pluginName+" "+versionBounds.getRangeString()+" matched: "+pluginName+" "+pluginVersion);
+		logger.fine("Referenced plugin: "+pluginName+" "+versionBounds.getRangeString()+" matched: "+pluginName+" "+pluginVersion);
 		try {
 			return plugin.getClass().getMethod("getModProxy").invoke(plugin);
 		} catch(NoSuchMethodException e) {

@@ -13,6 +13,8 @@
  */
 package cpw.mods.fml.common;
 
+import immibis.lavabukkit.loader.ModPluginManager;
+
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -703,12 +705,14 @@ public class Loader
 
     public void serverStarted()
     {
+    	ModPluginManager.onServerStarted(); // LavaBukkit
         modController.distributeStateMessage(LoaderState.SERVER_STARTED);
         modController.transition(LoaderState.SERVER_STARTED);
     }
 
     public void serverStopping()
     {
+    	ModPluginManager.onServerStopping(); // LavaBukkit
         modController.distributeStateMessage(LoaderState.SERVER_STOPPING);
         modController.transition(LoaderState.SERVER_STOPPING);
     }

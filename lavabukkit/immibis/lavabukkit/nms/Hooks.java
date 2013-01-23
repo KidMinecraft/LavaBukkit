@@ -10,6 +10,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockCactus;
 import net.minecraft.block.BlockCrops;
 import net.minecraft.block.BlockFarmland;
 import net.minecraft.block.BlockGrass;
@@ -231,6 +232,13 @@ public class Hooks {
 		return true;
 	}
 	
+	public static boolean onCactusGrow(World world, int x, int y, int z, int newBlock, BlockCactus block, World world2, int x2, int y2, int z2, Random random) {
+		if(world.isRemote) return false;
+		
+		org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockGrowEvent(world, x, y, z, newBlock, 0);
+		return true;
+	}
+	
 	public static boolean onSnowFade(World world, int x, int y, int z, int newBlock, BlockSnow oldBlock, World world2, int x2, int y2, int z2) {
 		if(world.isRemote) return false;
 		
@@ -330,8 +338,9 @@ public class Hooks {
 	
 	public static boolean onFarmlandDry(World world, int x, int y, int z, int newBlockID, BlockFarmland block, World world2, int x2, int y2, int z2, Random random) {
         if(world.isRemote) return false;
-		
-        if(!CraftEventFactory.callBlockFadeEvent(world.getWorld().getBlockAt(x, y, z), newBlockID).isCancelled())
+        
+        boolean cancelled = CraftEventFactory.callBlockFadeEvent(world.getWorld().getBlockAt(x, y, z), newBlockID).isCancelled();
+        if(!cancelled)
             world.setBlockWithNotify(x, y, z, newBlockID);
         return true;
 	}

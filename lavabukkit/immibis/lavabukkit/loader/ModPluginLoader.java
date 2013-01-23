@@ -261,6 +261,7 @@ public class ModPluginLoader implements PluginLoader {
             	m.invoke(jPlugin, true);
             } catch (Throwable ex) {
                 server.getLogger().log(Level.SEVERE, "Error occurred while enabling " + plugin.getDescription().getFullName() + " (Is it up to date?)", ex);
+                System.exit(0); // failure to load a mod plugin is a fatal error (LavaBukkit)
             }
 
             // Perhaps abort here, rather than continue going, but as it stands,

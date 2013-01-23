@@ -432,6 +432,10 @@ public class HookInsertionTransformer extends ASMTransformerBase {
 			mapmethod("net/minecraft/world/World", "setBlockWithNotify", "(IIII)Z"),
 			findHookMethod("onReedGrow"));
 		replaceMethod(
+			mapmethod("net/minecraft/block/BlockCactus", "updateTick", "(Lnet/minecraft/world/World;IIILjava/util/Random;)V"),
+			mapmethod("net/minecraft/world/World", "setBlockWithNotify", "(IIII)Z"),
+			findHookMethod("onCactusGrow"));
+		replaceMethod(
 			mapmethod("net/minecraft/block/BlockSnow", "canSnowStay", "(Lnet/minecraft/world/World;III)Z"),
 			mapmethod("net/minecraft/world/World", "setBlockWithNotify", "(IIII)Z"),
 			findHookMethod("onSnowFade"));

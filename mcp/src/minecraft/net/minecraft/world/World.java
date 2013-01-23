@@ -2142,9 +2142,11 @@ public abstract class World implements IBlockAccess
                 continue;
             }
 
-            ChunkProviderServer chunkProviderServer = ((WorldServer) this).theChunkProviderServer;
-            if (chunkProviderServer.chunksToUnload.contains(MathHelper.floor_double(var2.posX) >> 4, MathHelper.floor_double(var2.posZ) >> 4)) {
-                continue;
+            if(!isRemote) {
+	            ChunkProviderServer chunkProviderServer = ((WorldServer) this).theChunkProviderServer;
+	            if (chunkProviderServer.chunksToUnload.contains(MathHelper.floor_double(var2.posX) >> 4, MathHelper.floor_double(var2.posZ) >> 4)) {
+	                continue;
+	            }
             }
             // CraftBukkit end
 

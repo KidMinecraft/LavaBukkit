@@ -5,6 +5,7 @@
 	<classpathentry kind="src" path="craftbukkit-src"/>
 	<classpathentry kind="src" path="craftbukkit-resources"/>
 	<classpathentry kind="src" path="mcp/src/minecraft"/>
+	<classpathentry kind="src" path="lavabukkit-tests"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
 	<classpathentry kind="lib" path="lavabukkit-src/libs/commons-lang-2.6.jar"/>
 	<classpathentry kind="lib" path="lavabukkit-src/libs/ebean-2.7.7.jar"/>

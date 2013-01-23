@@ -1,0 +1,3 @@
+name: LavaBukkit Test Mod Plugin
+main: immibis.lavabukkit.tests.TestModPlugin
+version: 1.0

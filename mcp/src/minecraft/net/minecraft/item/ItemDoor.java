@@ -123,6 +123,7 @@ public class ItemDoor extends Item
         // CraftBukkit start
         if (entityhuman != null && !par0World.isRemote) {
         	if(!ItemBlock.processBlockPlace(par0World, entityhuman, null, par1, par2, par3, 1, par5Block.blockID, par4, 0, 0, 0)) {
+        		par0World.markBlockForUpdate(par1, par2+1, par3); // notify client
         		return false;
         	}
         	

@@ -80,7 +80,7 @@ public class LongHashSet {
     }
 
     public boolean add(int msw, int lsw) {
-        return add(ChunkCoordIntPair.chunkXZ2Int(msw, lsw));
+        return add(LongHash.toLong(msw, lsw));
     }
 
     public boolean add(long value) {
