@@ -106,7 +106,7 @@ public class ItemBlock extends Item
                 --par1ItemStack.stackSize;
             }*/
             
-            return processBlockPlace(par3World, par2EntityPlayer, par1ItemStack, par4, par5, par6, par7, itemID, var13, par8, par9, par10);
+            return processBlockPlace(par3World, par2EntityPlayer, par1ItemStack, par4, par5, par6, par7, itemID, var14, par8, par9, par10);
             // CraftBukkit end
         }
         else
