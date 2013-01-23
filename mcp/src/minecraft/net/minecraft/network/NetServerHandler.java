@@ -696,6 +696,8 @@ public class NetServerHandler extends NetHandler
         // CraftBukkit start
         if(this.playerEntity.isDead) return;
         
+        /* LavaBukkit - removed because it seems to break buckets. TODO does it need to be fixed or can it stay removed?
+        
         // This is a horrible hack needed because the client sends 2 packets on 'right mouse click'
         // aimed at a block. We shouldn't need to get the second packet if the data is handled
         // but we cannot know what the client will do, so we might still get it
@@ -712,7 +714,7 @@ public class NetServerHandler extends NetHandler
         } else {
             this.lastMaterial = par1Packet15Place.getItemStack() == null ? -1 : par1Packet15Place.getItemStack().itemID;
             this.lastPacket = par1Packet15Place.creationTimeMillis;
-        }
+        } */
         
         // CraftBukkit - if rightclick decremented the item, always send the update packet.
         // this is not here for CraftBukkit's own functionality; rather it is to fix
