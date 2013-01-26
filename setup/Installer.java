@@ -57,9 +57,12 @@ static void downloadcached(String url, String cache, String dest) throws Excepti
 	File p = new File(dest).getParentFile();
 	if(!p.exists() && !p.mkdirs())
 		throw new IOException("Failed to create directory: "+p);
-	System.out.println("copying "+cache+" to "+dest);
-	OutputStream out = new FileOutputStream(dest);
-	InputStream in = new FileInputStream(cache);
+	copy(cache, dest);
+}
+static void copy(String src, String dst) throws Exception {
+	System.out.println("copying "+src+" to "+dst);
+	OutputStream out = new FileOutputStream(dst);
+	InputStream in = new FileInputStream(src);
 	copystream(in, out);
 	in.close();
 	out.close();
@@ -115,6 +118,9 @@ public static void main(String[] args) throws Exception {
 	OutputStream out = p.getOutputStream();
 	out.write("Yes\n".getBytes());
 	out.close();
+
+	for(String fn : new File("../lavabukkit/libs").list())
+		copy("../lavabukkit/libs/" + fn, "../mcp/lib/" + fn);
 }
 }
 
