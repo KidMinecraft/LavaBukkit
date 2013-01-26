@@ -40,6 +40,13 @@ public class Teleporter
      */
     public void placeInPortal(Entity par1Entity, double par2, double par4, double par6, float par8)
     {
+    	// CraftBukkit start
+    	boolean wasEnabled = field_85192_a.theChunkProviderServer.loadChunkOnProvideRequest;
+        if (!wasEnabled) {
+        	field_85192_a.theChunkProviderServer.loadChunkOnProvideRequest = true;
+        }
+        // CraftBukkit end
+        
         if (this.field_85192_a.provider.dimensionId != 1)
         {
             if (!this.placeInExistingPortal(par1Entity, par2, par4, par6, par8))
@@ -74,6 +81,8 @@ public class Teleporter
             par1Entity.setLocationAndAngles((double)var9, (double)var10, (double)var11, par1Entity.rotationYaw, 0.0F);
             par1Entity.motionX = par1Entity.motionY = par1Entity.motionZ = 0.0D;
         }
+        
+        field_85192_a.theChunkProviderServer.loadChunkOnProvideRequest = wasEnabled; // CraftBukkit
     }
 
     /**
@@ -115,9 +124,9 @@ public class Teleporter
 
                     for (int var26 = this.field_85192_a.getActualHeight() - 1; var26 >= 0; --var26)
                     {
-                        if (this.field_85192_a.getBlockId(var48, var26, var23) == Block.portal.blockID)
+                    	if (this.field_85192_a.getBlockId(var48, var26, var23) == Block.portal.blockID)
                         {
-                            while (this.field_85192_a.getBlockId(var48, var26 - 1, var23) == Block.portal.blockID)
+                        	while (this.field_85192_a.getBlockId(var48, var26 - 1, var23) == Block.portal.blockID)
                             {
                                 --var26;
                             }
