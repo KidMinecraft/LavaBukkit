@@ -504,6 +504,7 @@ public abstract class ServerConfigurationManager
         }
 
         // CraftBukkit start
+        entityplayer1.dimension = var8.provider.dimensionId; // LavaBukkit
         var7.playerNetServerHandler.sendPacketToPlayer(new Packet9Respawn(var7.dimension, (byte)var7.worldObj.difficultySetting, var7.worldObj.getWorldInfo().getTerrainType(), var7.worldObj.getHeight(), var7.theItemInWorldManager.getGameType()));
         entityplayer1.setWorld(var8);
         entityplayer1.isDead = false;
