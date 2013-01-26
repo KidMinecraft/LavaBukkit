@@ -315,9 +315,6 @@ public class EntityArrow extends Entity implements IProjectile
 
                     DamageSource var21 = null;
 
-                    // CraftBukkit; move damage call up so entity only catches fire if damage succeeds
-                    if (var4.entityHit.attackEntityFrom(var21, var23)) {
-                    	
                     if (this.shootingEntity == null)
                     {
                         var21 = DamageSource.causeArrowDamage(this, this);
@@ -327,6 +324,9 @@ public class EntityArrow extends Entity implements IProjectile
                         var21 = DamageSource.causeArrowDamage(this, this.shootingEntity);
                     }
 
+                    // CraftBukkit; move damage call up so entity only catches fire if damage succeeds
+                    if (var4.entityHit.attackEntityFrom(var21, var23)) {
+                    	
                     if (this.isBurning() && !(var4.entityHit instanceof EntityEnderman))
                     {
                         var4.entityHit.setFire(5);
