@@ -19,6 +19,12 @@ import cpw.mods.fml.relauncher.IClassTransformer;
 
 public class PluginReflectionTransformer extends ASMTransformerBase {
 
+	public final TransformingURLClassLoader classLoader;
+	
+	public PluginReflectionTransformer(TransformingURLClassLoader loader) {
+		classLoader = loader;
+	}
+
 	@Override
 	public int getClassWriterFlags() {
 		return ClassWriter.COMPUTE_MAXS;
@@ -27,7 +33,7 @@ public class PluginReflectionTransformer extends ASMTransformerBase {
 	//{VERIFY_BYTECODE = true;}
 	
 	private static Mapping fromCB = Mappings.CB_to_current;
-	private static Mapping toCB = Mapping.reverse(fromCB);
+	private static Mapping toCB = fromCB.reverse();
 	
 	@Override
 	public ClassVisitor transform(String name, ClassVisitor parent) {
@@ -106,14 +112,10 @@ public class PluginReflectionTransformer extends ASMTransformerBase {
 		}
 		cbDesc += ")";
 		
-		for(Method m : fromCB.getMethods()) {
-			if(m.owner.equals(cbClassName) && m.name.equals(name) && m.desc.startsWith(cbDesc)) {
-				Method currentM = fromCB.mapMethod(m);
-				for(java.lang.reflect.Method m2 : c.getMethods()) {
-					if(m2.getName().equals(currentM.name) && Type.getMethodDescriptor(m2).equals(currentM.desc)) {
-						return m2;
-					}
-				}
+		for(java.lang.reflect.Method m : c.getMethods()) {
+			Method cbm = toCB.mapMethod(new Method(c.getName().replace('.', '/'), m.getName(), Type.getMethodDescriptor(m)));
+			if(cbm.name.equals(name) && cbm.desc.startsWith(cbDesc)) {
+				return m;
 			}
 		}
 		

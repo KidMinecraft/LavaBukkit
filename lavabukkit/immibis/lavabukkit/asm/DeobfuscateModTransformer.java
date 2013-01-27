@@ -33,7 +33,7 @@ import cpw.mods.fml.relauncher.RelaunchClassLoader;
 public class DeobfuscateModTransformer extends ASMTransformerBase {
 
 	private static final Mapping M = Mappings.obf_to_current;
-	private static final Mapping Minv = Mapping.reverse(Mappings.obf_to_current);
+	private static final Mapping Minv = M.reverse();
 	
 	private static final Set<String> NET_MINECRAFT_SRC = ImmutableSet.of("BaseMod", "MLProp", "EntityRendererProxy", "FMLRenderAccessLibrary", "ModLoader", "ModTextureAnimation", "ModTextureStatic", "TradeEntry");
 	
@@ -94,7 +94,7 @@ public class DeobfuscateModTransformer extends ASMTransformerBase {
 		if(recursive)
 			return null;
 		
-		return new Method(mapClass(in.owner), in.name, M.mapMethodDescriptor(in.desc));
+		return new Method(mapClass(in.owner), in.name, Mappings.mapMethodDescriptor(M, in.desc));
 	}
 	
 	private static Field mapField(String owner, String name, String desc, boolean recursive) {
@@ -149,7 +149,7 @@ public class DeobfuscateModTransformer extends ASMTransformerBase {
 			
 			@Override
 			public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
-				desc = M.mapTypeDescriptor(desc);
+				desc = Mappings.mapTypeDescriptor(M, desc);
 				return super.visitField(access, name, desc, signature, value);
 			}
 			
@@ -181,14 +181,14 @@ public class DeobfuscateModTransformer extends ASMTransformerBase {
 						Field f2 = mapField(owner, name, desc, false);
 						owner = f2.owner;
 						name = f2.name;
-						desc = M.mapTypeDescriptor(desc);
+						desc = Mappings.mapTypeDescriptor(M, desc);
 						
 						super.visitFieldInsn(opcode, owner, name, desc);
 					}
 					
 					@Override
 					public void visitTypeInsn(int opcode, String type) {
-						type = M.mapTypeDescriptor(type);
+						type = Mappings.mapTypeDescriptor(M, type);
 						super.visitTypeInsn(opcode, type);
 					}
 					
@@ -208,13 +208,13 @@ public class DeobfuscateModTransformer extends ASMTransformerBase {
 					
 					@Override
 					public void visitLocalVariable(String name, String desc, String signature, Label start, Label end, int index) {
-						desc = M.mapTypeDescriptor(desc);
+						desc = Mappings.mapTypeDescriptor(M, desc);
 						super.visitLocalVariable(name, desc, signature, start, end, index);
 					}
 					
 					@Override
 					public void visitMultiANewArrayInsn(String desc, int dims) {
-						desc = M.mapTypeDescriptor(desc);
+						desc = Mappings.mapTypeDescriptor(M, desc);
 						super.visitMultiANewArrayInsn(desc, dims);
 					}
 					

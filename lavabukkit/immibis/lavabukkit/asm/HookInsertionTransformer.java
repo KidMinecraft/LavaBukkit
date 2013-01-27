@@ -396,7 +396,7 @@ public class HookInsertionTransformer extends ASMTransformerBase {
 		String owner2 = Mappings.MCP_to_current.mapClass(owner);
 		if(owner2 == owner)
 			throw new IllegalArgumentException("MCP mapping not found: "+owner);
-		return new Method(owner2, name, Mappings.MCP_to_current.mapMethodDescriptor(desc));
+		return new Method(owner2, name, Mappings.mapMethodDescriptor(Mappings.MCP_to_current, desc));
 	}
 	
 	static {
