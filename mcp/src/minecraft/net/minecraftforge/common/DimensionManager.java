@@ -151,6 +151,9 @@ public class DimensionManager
         }
 
         MinecraftServer.getServer().worldServers = tmp.toArray(new WorldServer[tmp.size()]);
+        
+        // LavaBukkit - CraftBukkit plugin compatibility
+        MinecraftServer.getServer().worlds = tmp;
     }
 
     public static void initDimension(int dim) {

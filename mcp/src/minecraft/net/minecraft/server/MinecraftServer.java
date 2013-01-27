@@ -102,6 +102,8 @@ public abstract class MinecraftServer implements ICommandSender, Runnable, IPlay
 
     /** The server world instances. */
     public WorldServer[] worldServers;
+    
+    public List<WorldServer> worlds; // LavaBukkit - CraftBukkit plugin compatibility
 
     /** The ServerConfigurationManager instance. */
     private ServerConfigurationManager serverConfigManager;
